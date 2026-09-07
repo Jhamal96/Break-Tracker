@@ -63,7 +63,7 @@
 
     .timer-display { text-align: center; padding: 1rem; background: #eef2ff; border-radius: 8px; margin-bottom: 1rem; border: 1px solid #c7d2fe; }
     .timer-time { font-size: 2.5rem; font-weight: 800; color: var(--primary); font-variant-numeric: tabular-nums; }
-    .timer-label { font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem; }
+    .timer-label { font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem; font-weight: 500; }
 
     .btn-group { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
     button { background: var(--primary); color: white; border: none; padding: 0.65rem 0.8rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s, opacity 0.2s; font-size: 0.875rem; }
@@ -185,6 +185,7 @@
 
   let timerInterval = null;
   let targetEndTime = null;
+  let activeBreakName = "";
   let supabaseClient = null;
 
   const shiftStartInput = document.getElementById('shift-start');
@@ -353,16 +354,16 @@
     } catch (e) {}
   }
 
-  // Toggle button availability during breaks
   function setBreakControlsDisabled(disabled) {
     document.querySelectorAll('.break-btn').forEach(b => b.disabled = disabled);
     document.querySelectorAll('.break-input').forEach(i => i.disabled = disabled);
   }
 
   function startPresetBreak(durationMinutes, label) {
+    activeBreakName = label;
     const now = new Date();
     targetEndTime = new Date(now.getTime() + durationMinutes * 60000);
-    runTimer(label);
+    runTimer();
   }
 
   function startCustomBreak() {
@@ -386,12 +387,13 @@
       return;
     }
 
-    runTimer(`Break (Ends at ${formatTime(targetEndTime)})`);
+    activeBreakName = `Custom Break (${duration}m)`;
+    runTimer();
   }
 
-  function runTimer(label) {
+  function runTimer() {
     clearInterval(timerInterval);
-    setBreakControlsDisabled(true); // Disable buttons when break starts
+    setBreakControlsDisabled(true);
     
     function update() {
       const now = new Date();
@@ -400,17 +402,17 @@
       if (diff <= 0) {
         clearInterval(timerInterval);
         timerInterval = null;
-        setBreakControlsDisabled(false); // Enable buttons when timer expires
+        setBreakControlsDisabled(false);
         timerDisplay.textContent = "00:00";
-        timerLabel.textContent = "Break ended!";
-        sendNotification("Break Finished!", "Your break time is up. Back to work!");
+        timerLabel.textContent = `⏰ ${activeBreakName} ended! Back to work.`;
+        sendNotification(`${activeBreakName} Finished!`, "Your break time is up. Back to work!");
         return;
       }
 
       const m = Math.floor(diff / 60000);
       const s = Math.floor((diff % 60000) / 1000);
       timerDisplay.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-      timerLabel.textContent = `${label} • Ends at ${formatTime(targetEndTime)}`;
+      timerLabel.textContent = `${activeBreakName} • Ends at ${formatTime(targetEndTime)}`;
     }
 
     update();
@@ -424,16 +426,17 @@
     }
     clearInterval(timerInterval);
     timerInterval = null;
-    setBreakControlsDisabled(false); // Re-enable buttons on complete
+    setBreakControlsDisabled(false);
     timerDisplay.textContent = "00:00";
-    timerLabel.textContent = "Break completed! Back to work.";
+    timerLabel.textContent = `✓ ${activeBreakName} completed! Back to work.`;
     playChime();
   }
 
   function stopTimer() {
     clearInterval(timerInterval);
     timerInterval = null;
-    setBreakControlsDisabled(false); // Re-enable buttons on cancel/reset
+    activeBreakName = "";
+    setBreakControlsDisabled(false);
     timerDisplay.textContent = "00:00";
     timerLabel.textContent = "No active break";
   }
