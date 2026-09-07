@@ -76,14 +76,17 @@
     button.danger:hover { background: #dc2626; }
     button.sm { padding: 0.4rem 0.6rem; font-size: 0.75rem; }
 
+    /* Disabled state styling */
+    button:disabled, input:disabled {
+      opacity: 0.4;
+      cursor: not-allowed !important;
+      pointer-events: none;
+    }
+
     .custom-break { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
     .custom-break input { flex: 1; }
 
     .break-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.75rem; }
-
-    details { margin-top: 0.5rem; }
-    details summary { font-size: 0.8rem; color: var(--text-muted); cursor: pointer; font-weight: 500; user-select: none; }
-    .supabase-box { margin-top: 0.75rem; background: #fafafa; padding: 0.8rem; border-radius: 8px; border: 1px dashed var(--border); display: flex; flex-direction: column; gap: 0.5rem; }
   </style>
 </head>
 <body>
@@ -157,44 +160,28 @@
     </div>
 
     <div class="btn-group">
-      <button onclick="startPresetBreak(15, '1st Break (15m)')">15m Break</button>
-      <button onclick="startPresetBreak(30, 'Lunch (30m)')">30m Lunch</button>
-      <button onclick="startPresetBreak(15, '2nd Break (15m)')">15m Break</button>
+      <button class="break-btn" onclick="startPresetBreak(15, '1st Break (15m)')">15m Break</button>
+      <button class="break-btn" onclick="startPresetBreak(30, 'Lunch (30m)')">30m Lunch</button>
+      <button class="break-btn" onclick="startPresetBreak(15, '2nd Break (15m)')">15m Break</button>
     </div>
 
     <div class="custom-break">
-      <input type="time" id="custom-time">
-      <input type="number" id="custom-duration" placeholder="Min" value="15" min="1" style="width: 75px;">
-      <button class="secondary" onclick="startCustomBreak()">Set Custom</button>
+      <input type="time" id="custom-time" class="break-input">
+      <input type="number" id="custom-duration" class="break-input" placeholder="Min" value="15" min="1" style="width: 75px;">
+      <button class="secondary break-btn" onclick="startCustomBreak()">Set Custom</button>
     </div>
 
     <div class="break-actions">
       <button class="success" onclick="completeBreak()">✓ Complete Break</button>
-      <button class="danger" onclick="stopTimer()">Cancel / Stop</button>
+      <button class="danger" onclick="stopTimer()">Cancel / Reset</button>
     </div>
   </div>
-
-  <!-- Pre-configured Supabase Settings -->
-  <details>
-    <summary>☁️ Cloud Sync (Connected)</summary>
-    <div class="supabase-box">
-      <div class="form-group" style="margin: 0;">
-        <label for="sb-url">Supabase Project URL</label>
-        <input type="text" id="sb-url" value="https://vxpufrahrnwmtgltjstd.supabase.co">
-      </div>
-      <div class="form-group" style="margin: 0;">
-        <label for="sb-key">Supabase API Key</label>
-        <input type="text" id="sb-key" value="sb_publishable_tRjMtsoo9aT-6n7dzj9p-w_HsUqJ520">
-      </div>
-      <button class="secondary sm" onclick="saveSupabaseConfig()">Update Connection</button>
-    </div>
-  </details>
 </div>
 
 <script>
-  // DEFAULT CONFIGURATION (Pre-filled)
-  const DEFAULT_SUPABASE_URL = "https://vxpufrahrnwmtgltjstd.supabase.co";
-  const DEFAULT_SUPABASE_KEY = "sb_publishable_tRjMtsoo9aT-6n7dzj9p-w_HsUqJ520";
+  // Supabase Configuration (Embedded in background)
+  const SUPABASE_URL = "https://vxpufrahrnwmtgltjstd.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_tRjMtsoo9aT-6n7dzj9p-w_HsUqJ520";
 
   let timerInterval = null;
   let targetEndTime = null;
@@ -232,9 +219,6 @@
     saveData();
   }
 
-  // CALCULATION LOGIC:
-  // - Breaks calculated from Official Start Time (clock-in)
-  // - Shift End calculated from Shift Start Time (scheduled start)
   function calculateSchedule() {
     const shiftVal = shiftStartInput.value;
     const officialVal = officialStartInput.value || shiftVal;
@@ -268,26 +252,8 @@
   }
 
   function initSupabase() {
-    const url = localStorage.getItem('sb_url') || DEFAULT_SUPABASE_URL;
-    const key = localStorage.getItem('sb_key') || DEFAULT_SUPABASE_KEY;
-
-    document.getElementById('sb-url').value = url;
-    document.getElementById('sb-key').value = key;
-
-    if (url && key && window.supabase) {
-      supabaseClient = window.supabase.createClient(url, key);
-    }
-  }
-
-  function saveSupabaseConfig() {
-    const url = document.getElementById('sb-url').value.trim();
-    const key = document.getElementById('sb-key').value.trim();
-    if (url && key) {
-      localStorage.setItem('sb_url', url);
-      localStorage.setItem('sb_key', key);
-      initSupabase();
-      saveData();
-      alert("Supabase connection updated!");
+    if (SUPABASE_URL && SUPABASE_KEY && window.supabase) {
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     }
   }
 
@@ -387,6 +353,12 @@
     } catch (e) {}
   }
 
+  // Toggle button availability during breaks
+  function setBreakControlsDisabled(disabled) {
+    document.querySelectorAll('.break-btn').forEach(b => b.disabled = disabled);
+    document.querySelectorAll('.break-input').forEach(i => i.disabled = disabled);
+  }
+
   function startPresetBreak(durationMinutes, label) {
     const now = new Date();
     targetEndTime = new Date(now.getTime() + durationMinutes * 60000);
@@ -419,6 +391,7 @@
 
   function runTimer(label) {
     clearInterval(timerInterval);
+    setBreakControlsDisabled(true); // Disable buttons when break starts
     
     function update() {
       const now = new Date();
@@ -426,6 +399,8 @@
 
       if (diff <= 0) {
         clearInterval(timerInterval);
+        timerInterval = null;
+        setBreakControlsDisabled(false); // Enable buttons when timer expires
         timerDisplay.textContent = "00:00";
         timerLabel.textContent = "Break ended!";
         sendNotification("Break Finished!", "Your break time is up. Back to work!");
@@ -449,6 +424,7 @@
     }
     clearInterval(timerInterval);
     timerInterval = null;
+    setBreakControlsDisabled(false); // Re-enable buttons on complete
     timerDisplay.textContent = "00:00";
     timerLabel.textContent = "Break completed! Back to work.";
     playChime();
@@ -457,6 +433,7 @@
   function stopTimer() {
     clearInterval(timerInterval);
     timerInterval = null;
+    setBreakControlsDisabled(false); // Re-enable buttons on cancel/reset
     timerDisplay.textContent = "00:00";
     timerLabel.textContent = "No active break";
   }
