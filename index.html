@@ -4,8 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Work Shift & Break Tracker</title>
-
-  <!-- Supabase JS Client (Optional Cloud Sync) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
@@ -97,11 +95,10 @@
     </div>
   </header>
 
-  <!-- Shift Setup Card -->
   <div class="card">
     <div class="card-header">
       <div class="card-title">Shift Setup</div>
-      <span class="save-indicator" id="save-indicator">✓ Saved</span>
+      <span class="save-indicator" id="save-indicator">✓ Synced</span>
     </div>
 
     <div class="grid-2">
@@ -140,7 +137,6 @@
     </div>
   </div>
 
-  <!-- Active Break Tracker Card -->
   <div class="card">
     <div class="card-header">
       <div class="card-title">Active Break Tracker</div>
@@ -165,9 +161,8 @@
     </div>
   </div>
 
-  <!-- Optional Supabase Cloud Sync Section -->
-  <details>
-    <summary>☁️ Optional: Cloud Sync (Supabase Setup)</summary>
+  <details open>
+    <summary>☁️ Cloud Sync (Supabase Credentials)</summary>
     <div class="supabase-box">
       <div class="form-group" style="margin: 0;">
         <label for="sb-url">Supabase Project URL</label>
@@ -177,7 +172,7 @@
         <label for="sb-key">Supabase Anon Key</label>
         <input type="text" id="sb-key" placeholder="eyJhbGciOi... (Anon Public Key)">
       </div>
-      <button class="secondary sm" onclick="saveSupabaseConfig()">Connect Supabase</button>
+      <button class="secondary sm" onclick="saveSupabaseConfig()">Connect & Sync</button>
     </div>
   </details>
 </div>
@@ -194,32 +189,20 @@
   const timerLabel = document.getElementById('timer-label');
   const saveIndicator = document.getElementById('save-indicator');
 
-  // Load saved state on open
-  window.addEventListener('DOMContentLoaded', () => {
-    loadSavedData();
-    calculateSchedule();
+  window.addEventListener('DOMContentLoaded', async () => {
     initSupabase();
-  });
-
-  // Event Listeners for auto-saving and re-calculating
-  shiftStartInput.addEventListener('change', () => {
+    await loadSavedData();
     calculateSchedule();
-    saveDataLocally();
   });
 
-  officialStartInput.addEventListener('change', () => {
-    calculateSchedule();
-    saveDataLocally();
-  });
-
-  notifyToggle.addEventListener('change', () => {
-    saveDataLocally();
-  });
+  shiftStartInput.addEventListener('change', () => { calculateSchedule(); saveData(); });
+  officialStartInput.addEventListener('change', () => { calculateSchedule(); saveData(); });
+  notifyToggle.addEventListener('change', () => { saveData(); });
 
   function syncOfficialWithShift() {
     officialStartInput.value = shiftStartInput.value;
     calculateSchedule();
-    saveDataLocally();
+    saveData();
   }
 
   function setCurrentAsOfficial() {
@@ -228,10 +211,9 @@
     const minutes = String(now.getMinutes()).padStart(2, '0');
     officialStartInput.value = `${hours}:${minutes}`;
     calculateSchedule();
-    saveDataLocally();
+    saveData();
   }
 
-  // Calculate schedule based on Official Start Time
   function calculateSchedule() {
     const startVal = officialStartInput.value || shiftStartInput.value;
     if (!startVal) return;
@@ -240,10 +222,10 @@
     const officialStart = new Date();
     officialStart.setHours(h, m, 0, 0);
 
-    const b1 = new Date(officialStart.getTime() + 2 * 3600000);         // +2 hrs
-    const lunch = new Date(officialStart.getTime() + 4 * 3600000);      // +4 hrs
-    const b2 = new Date(officialStart.getTime() + 6.25 * 3600000);     // +6.25 hrs
-    const end = new Date(officialStart.getTime() + (8.5 * 3600000));   // 8h shift + 30m lunch
+    const b1 = new Date(officialStart.getTime() + 2 * 3600000);
+    const lunch = new Date(officialStart.getTime() + 4 * 3600000);
+    const b2 = new Date(officialStart.getTime() + 6.25 * 3600000);
+    const end = new Date(officialStart.getTime() + (8.5 * 3600000));
 
     document.getElementById('sched-b1').textContent = formatTime(b1);
     document.getElementById('sched-lunch').textContent = formatTime(lunch);
@@ -255,23 +237,72 @@
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
-  // LocalStorage Persistence
-  function saveDataLocally() {
-    const data = {
+  function initSupabase() {
+    const url = localStorage.getItem('sb_url');
+    const key = localStorage.getItem('sb_key');
+    if (url) document.getElementById('sb-url').value = url;
+    if (key) document.getElementById('sb-key').value = key;
+
+    if (url && key && window.supabase) {
+      supabaseClient = window.supabase.createClient(url, key);
+    }
+  }
+
+  function saveSupabaseConfig() {
+    const url = document.getElementById('sb-url').value.trim();
+    const key = document.getElementById('sb-key').value.trim();
+    if (url && key) {
+      localStorage.setItem('sb_url', url);
+      localStorage.setItem('sb_key', key);
+      initSupabase();
+      saveData();
+      alert("Supabase connected! Your shifts will now sync across devices.");
+    }
+  }
+
+  async function saveData() {
+    const payload = {
       shiftStart: shiftStartInput.value,
       officialStart: officialStartInput.value,
       notificationsEnabled: notifyToggle.checked,
       lastUpdated: new Date().toISOString()
     };
 
-    localStorage.setItem('breakTracker_state', JSON.stringify(data));
+    localStorage.setItem('breakTracker_state', JSON.stringify(payload));
     showSaveIndicator();
 
-    // Push to Supabase if configured
-    syncToSupabase(data);
+    if (supabaseClient) {
+      try {
+        await supabaseClient.from('shifts').upsert([{ 
+          id: 1, 
+          shift_start: payload.shiftStart,
+          official_start: payload.officialStart,
+          notifications_enabled: payload.notificationsEnabled,
+          updated_at: payload.lastUpdated
+        }]);
+      } catch (err) {
+        console.error("Supabase sync error:", err);
+      }
+    }
   }
 
-  function loadSavedData() {
+  async function loadSavedData() {
+    // Try Supabase Cloud Fetch First
+    if (supabaseClient) {
+      try {
+        const { data, error } = await supabaseClient.from('shifts').select('*').eq('id', 1).single();
+        if (data && !error) {
+          if (data.shift_start) shiftStartInput.value = data.shift_start;
+          if (data.official_start) officialStartInput.value = data.official_start;
+          if (data.notifications_enabled !== undefined) notifyToggle.checked = data.notifications_enabled;
+          return;
+        }
+      } catch (e) {
+        console.warn("Could not fetch from cloud, falling back to local storage.", e);
+      }
+    }
+
+    // Fallback to Local Storage
     const raw = localStorage.getItem('breakTracker_state');
     if (raw) {
       try {
@@ -279,9 +310,7 @@
         if (data.shiftStart) shiftStartInput.value = data.shiftStart;
         if (data.officialStart) officialStartInput.value = data.officialStart;
         if (data.notificationsEnabled !== undefined) notifyToggle.checked = data.notificationsEnabled;
-      } catch (e) {
-        console.error("Failed to parse saved state", e);
-      }
+      } catch (e) {}
     }
   }
 
@@ -330,7 +359,7 @@
     } catch (e) {}
   }
 
-  // Timer Functions
+  // Timer Logic
   function startPresetBreak(durationMinutes, label) {
     const now = new Date();
     targetEndTime = new Date(now.getTime() + durationMinutes * 60000);
@@ -390,38 +419,6 @@
     clearInterval(timerInterval);
     timerDisplay.textContent = "00:00";
     timerLabel.textContent = "No active break";
-  }
-
-  // Optional Supabase Integration
-  function saveSupabaseConfig() {
-    const url = document.getElementById('sb-url').value.trim();
-    const key = document.getElementById('sb-key').value.trim();
-    if (url && key) {
-      localStorage.setItem('sb_url', url);
-      localStorage.setItem('sb_key', key);
-      initSupabase();
-      alert("Supabase connected!");
-    }
-  }
-
-  function initSupabase() {
-    const url = localStorage.getItem('sb_url');
-    const key = localStorage.getItem('sb_key');
-    if (url) document.getElementById('sb-url').value = url;
-    if (key) document.getElementById('sb-key').value = key;
-
-    if (url && key && window.supabase) {
-      supabaseClient = window.supabase.createClient(url, key);
-    }
-  }
-
-  async function syncToSupabase(data) {
-    if (!supabaseClient) return;
-    try {
-      await supabaseClient.from('shifts').upsert([{ id: 1, ...data }]);
-    } catch (err) {
-      console.log("Supabase sync skipped/failed:", err);
-    }
   }
 </script>
 </body>
