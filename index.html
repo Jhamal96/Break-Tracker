@@ -57,6 +57,7 @@
     .schedule-item { background: #f1f5f9; padding: 0.75rem; border-radius: 8px; text-align: center; }
     .schedule-item span { display: block; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
     .schedule-item strong { font-size: 0.95rem; color: var(--text); margin-top: 0.25rem; display: block; }
+    .schedule-item.highlight { background: #eef2ff; border: 1px solid #c7d2fe; }
 
     .timer-display { text-align: center; padding: 1rem; background: #eef2ff; border-radius: 8px; margin-bottom: 1rem; border: 1px solid #c7d2fe; }
     .timer-time { font-size: 2.5rem; font-weight: 800; color: var(--primary); font-variant-numeric: tabular-nums; }
@@ -103,11 +104,11 @@
 
     <div class="grid-2">
       <div class="form-group">
-        <label for="shift-start">Shift Start Time</label>
+        <label for="shift-start">Shift Start Time (Scheduled)</label>
         <input type="time" id="shift-start" value="09:00">
       </div>
       <div class="form-group">
-        <label for="official-start">Official Start Time</label>
+        <label for="official-start">Official Start Time (Clock-in)</label>
         <input type="time" id="official-start" value="09:00">
       </div>
     </div>
@@ -130,7 +131,7 @@
         <span>2nd Break (15m)</span>
         <strong id="sched-b2">03:15 PM</strong>
       </div>
-      <div class="schedule-item">
+      <div class="schedule-item highlight">
         <span>Shift End</span>
         <strong id="sched-end">05:30 PM</strong>
       </div>
@@ -161,7 +162,7 @@
     </div>
   </div>
 
-  <details open>
+  <details>
     <summary>☁️ Cloud Sync (Supabase Credentials)</summary>
     <div class="supabase-box">
       <div class="form-group" style="margin: 0;">
@@ -214,23 +215,37 @@
     saveData();
   }
 
+  // CALCULATION LOGIC:
+  // - Breaks follow Official Start Time (clock-in)
+  // - Shift End follows Shift Start Time (scheduled start)
   function calculateSchedule() {
-    const startVal = officialStartInput.value || shiftStartInput.value;
-    if (!startVal) return;
+    const shiftVal = shiftStartInput.value;
+    const officialVal = officialStartInput.value || shiftVal;
 
-    const [h, m] = startVal.split(':').map(Number);
-    const officialStart = new Date();
-    officialStart.setHours(h, m, 0, 0);
+    // 1. Calculate Breaks from Official Start Time
+    if (officialVal) {
+      const [oh, om] = officialVal.split(':').map(Number);
+      const officialStart = new Date();
+      officialStart.setHours(oh, om, 0, 0);
 
-    const b1 = new Date(officialStart.getTime() + 2 * 3600000);
-    const lunch = new Date(officialStart.getTime() + 4 * 3600000);
-    const b2 = new Date(officialStart.getTime() + 6.25 * 3600000);
-    const end = new Date(officialStart.getTime() + (8.5 * 3600000));
+      const b1 = new Date(officialStart.getTime() + 2 * 3600000);         // +2 hrs
+      const lunch = new Date(officialStart.getTime() + 4 * 3600000);      // +4 hrs
+      const b2 = new Date(officialStart.getTime() + 6.25 * 3600000);     // +6h 15m
 
-    document.getElementById('sched-b1').textContent = formatTime(b1);
-    document.getElementById('sched-lunch').textContent = formatTime(lunch);
-    document.getElementById('sched-b2').textContent = formatTime(b2);
-    document.getElementById('sched-end').textContent = formatTime(end);
+      document.getElementById('sched-b1').textContent = formatTime(b1);
+      document.getElementById('sched-lunch').textContent = formatTime(lunch);
+      document.getElementById('sched-b2').textContent = formatTime(b2);
+    }
+
+    // 2. Calculate Shift End from Shift Start Time
+    if (shiftVal) {
+      const [sh, sm] = shiftVal.split(':').map(Number);
+      const shiftStart = new Date();
+      shiftStart.setHours(sh, sm, 0, 0);
+
+      const end = new Date(shiftStart.getTime() + (8.5 * 3600000));     // 8h shift + 30m lunch
+      document.getElementById('sched-end').textContent = formatTime(end);
+    }
   }
 
   function formatTime(date) {
@@ -287,7 +302,6 @@
   }
 
   async function loadSavedData() {
-    // Try Supabase Cloud Fetch First
     if (supabaseClient) {
       try {
         const { data, error } = await supabaseClient.from('shifts').select('*').eq('id', 1).single();
@@ -302,7 +316,6 @@
       }
     }
 
-    // Fallback to Local Storage
     const raw = localStorage.getItem('breakTracker_state');
     if (raw) {
       try {
@@ -319,7 +332,6 @@
     setTimeout(() => saveIndicator.classList.remove('active'), 1500);
   }
 
-  // Notifications
   notifyToggle.addEventListener('change', async () => {
     if (notifyToggle.checked) {
       if (!("Notification" in window)) {
@@ -359,7 +371,6 @@
     } catch (e) {}
   }
 
-  // Timer Logic
   function startPresetBreak(durationMinutes, label) {
     const now = new Date();
     targetEndTime = new Date(now.getTime() + durationMinutes * 60000);
