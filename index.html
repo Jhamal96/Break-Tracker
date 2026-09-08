@@ -71,8 +71,8 @@
     header { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 1.25rem; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); transition: background-color 0.3s; }
     h1 { font-size: 1.25rem; font-weight: 700; color: var(--text); }
     
-    .header-controls { display: flex; align-items: center; gap: 0.75rem; }
-    .theme-select { padding: 0.35rem 0.6rem; border-radius: 8px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); font-size: 0.8rem; font-weight: 500; outline: none; cursor: pointer; }
+    .header-controls { display: flex; align-items: center; gap: 0.5rem; }
+    .theme-select { padding: 0.35rem 0.5rem; border-radius: 8px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); font-size: 0.8rem; font-weight: 500; outline: none; cursor: pointer; }
 
     .toggle-container { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; font-weight: 500; color: var(--text-muted); }
     .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
@@ -138,6 +138,9 @@
   <header>
     <h1>Shift & Break Tracker</h1>
     <div class="header-controls">
+      <!-- Refresh Button -->
+      <button class="secondary sm" onclick="refreshData()" title="Refresh and Re-sync Data">🔄 Refresh</button>
+
       <!-- Theme Switcher -->
       <select id="theme-select" class="theme-select" onchange="changeTheme(this.value)">
         <option value="auto">💻 System</option>
@@ -262,6 +265,15 @@
     updateControlsState();
   });
 
+  // Manual Refresh Function
+  async function refreshData() {
+    showSaveIndicator("🔄 Syncing...");
+    await loadSavedData();
+    calculateSchedule();
+    updateControlsState();
+    showSaveIndicator("✓ Refreshed!");
+  }
+
   // Theme Management
   function initTheme() {
     const savedTheme = localStorage.getItem('theme_pref') || 'auto';
@@ -343,7 +355,7 @@
     };
 
     localStorage.setItem('breakTracker_state', JSON.stringify(payload));
-    showSaveIndicator();
+    showSaveIndicator("✓ Synced");
 
     if (supabaseClient) {
       try {
@@ -394,9 +406,10 @@
     }
   }
 
-  function showSaveIndicator() {
+  function showSaveIndicator(text = "✓ Synced") {
+    saveIndicator.textContent = text;
     saveIndicator.classList.add('active');
-    setTimeout(() => saveIndicator.classList.remove('active'), 1500);
+    setTimeout(() => saveIndicator.classList.remove('active'), 1800);
   }
 
   notifyToggle.addEventListener('change', async () => {
