@@ -138,17 +138,14 @@
   <header>
     <h1>Shift & Break Tracker</h1>
     <div class="header-controls">
-      <!-- Refresh Button -->
       <button class="secondary sm" onclick="refreshData()" title="Refresh and Re-sync Data">🔄 Refresh</button>
 
-      <!-- Theme Switcher -->
       <select id="theme-select" class="theme-select" onchange="changeTheme(this.value)">
         <option value="auto">💻 System</option>
         <option value="light">☀️ Light</option>
         <option value="dark">🌙 Dark</option>
       </select>
 
-      <!-- Notification Toggle -->
       <div class="toggle-container">
         <span>Notify</span>
         <label class="switch">
@@ -233,7 +230,7 @@
 </div>
 
 <script>
-  // Hardcoded Supabase Configuration
+  // Hardcoded Supabase Credentials
   const SUPABASE_URL = "https://vxpufrahrnwmtgltjstd.supabase.co";
   const SUPABASE_KEY = "sb_publishable_tRjMtsoo9aT-6n7dzj9p-w_HsUqJ520";
 
@@ -263,18 +260,18 @@
     await loadSavedData();
     calculateSchedule();
     updateControlsState();
+    setupRealtimeSubscription();
   });
 
-  // Manual Refresh Function
-  async function refreshData() {
+  function refreshData() {
     showSaveIndicator("🔄 Syncing...");
-    await loadSavedData();
-    calculateSchedule();
-    updateControlsState();
-    showSaveIndicator("✓ Refreshed!");
+    loadSavedData().then(() => {
+      calculateSchedule();
+      updateControlsState();
+      showSaveIndicator("✓ Refreshed!");
+    });
   }
 
-  // Theme Management
   function initTheme() {
     const savedTheme = localStorage.getItem('theme_pref') || 'auto';
     themeSelect.value = savedTheme;
@@ -345,12 +342,33 @@
     }
   }
 
+  // Realtime subscription for cross-device updates
+  function setupRealtimeSubscription() {
+    if (!supabaseClient) return;
+    try {
+      supabaseClient
+        .channel('shifts-realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'shifts' }, (payload) => {
+          if (payload.new && payload.new.id === 1) {
+            applyStateData(payload.new);
+            showSaveIndicator("⚡ Realtime Sync");
+          }
+        })
+        .subscribe();
+    } catch(e) {
+      console.warn("Realtime setup error:", e);
+    }
+  }
+
   async function saveData() {
     const payload = {
       shiftStart: shiftStartInput.value,
       officialStart: officialStartInput.value,
       notificationsEnabled: notifyToggle.checked,
       completedBreaks: completedBreaks,
+      activeBreakName: activeBreakName,
+      activeBreakKey: activeBreakKey,
+      targetEndTime: targetEndTime ? targetEndTime.toISOString() : null,
       lastUpdated: new Date().toISOString()
     };
 
@@ -365,6 +383,9 @@
           official_start: payload.officialStart,
           notifications_enabled: payload.notificationsEnabled,
           completed_breaks: JSON.stringify(payload.completedBreaks),
+          active_break_name: payload.activeBreakName,
+          active_break_key: payload.activeBreakKey,
+          target_end_time: payload.targetEndTime,
           updated_at: payload.lastUpdated
         }]);
       } catch (err) {
@@ -379,16 +400,11 @@
       try {
         const { data, error } = await supabaseClient.from('shifts').select('*').eq('id', 1).single();
         if (data && !error) {
-          if (data.shift_start) shiftStartInput.value = data.shift_start;
-          if (data.official_start) officialStartInput.value = data.official_start;
-          if (data.notifications_enabled !== undefined) notifyToggle.checked = data.notifications_enabled;
-          if (data.completed_breaks) {
-            try { completedBreaks = JSON.parse(data.completed_breaks); } catch(e){}
-          }
+          applyStateData(data);
           loaded = true;
         }
       } catch (e) {
-        console.warn("Could not fetch from cloud, using local storage.", e);
+        console.warn("Could not fetch from cloud, falling back to local storage.", e);
       }
     }
 
@@ -404,6 +420,52 @@
         } catch (e) {}
       }
     }
+  }
+
+  function applyStateData(data) {
+    if (!data) return;
+
+    if (data.shift_start) shiftStartInput.value = data.shift_start;
+    if (data.official_start) officialStartInput.value = data.official_start;
+    if (data.notifications_enabled !== undefined) notifyToggle.checked = data.notifications_enabled;
+
+    if (data.completed_breaks) {
+      try {
+        completedBreaks = typeof data.completed_breaks === 'string' 
+          ? JSON.parse(data.completed_breaks) 
+          : data.completed_breaks;
+      } catch(e) {}
+    }
+
+    calculateSchedule();
+
+    const cloudTarget = data.target_end_time ? new Date(data.target_end_time) : null;
+    const cloudName = data.active_break_name || "";
+    const cloudKey = data.active_break_key || "";
+
+    if (cloudTarget && cloudTarget > new Date()) {
+      activeBreakName = cloudName;
+      activeBreakKey = cloudKey;
+      targetEndTime = cloudTarget;
+      runTimer(false); // run timer without trigger save loop
+    } else if (cloudTarget && cloudTarget <= new Date()) {
+      if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+      targetEndTime = null;
+      activeBreakName = cloudName;
+      if (activeBreakName) {
+        timerDisplay.textContent = "00:00";
+        timerLabel.textContent = `✓ ${activeBreakName} completed!`;
+      }
+    } else {
+      if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+      targetEndTime = null;
+      activeBreakName = "";
+      activeBreakKey = "";
+      timerDisplay.textContent = "00:00";
+      timerLabel.textContent = "No active break";
+    }
+
+    updateControlsState();
   }
 
   function showSaveIndicator(text = "✓ Synced") {
@@ -471,7 +533,7 @@
     activeBreakKey = key;
     const now = new Date();
     targetEndTime = new Date(now.getTime() + durationMinutes * 60000);
-    runTimer();
+    runTimer(true);
   }
 
   function startCustomBreak() {
@@ -497,13 +559,15 @@
 
     activeBreakName = `Custom Break (${duration}m)`;
     activeBreakKey = "custom";
-    runTimer();
+    runTimer(true);
   }
 
-  function runTimer() {
+  function runTimer(shouldSave = true) {
     clearInterval(timerInterval);
     updateControlsState();
     
+    if (shouldSave) saveData();
+
     function update() {
       const now = new Date();
       const diff = targetEndTime - now;
@@ -535,6 +599,7 @@
     if (activeBreakKey && activeBreakKey !== "custom") {
       completedBreaks[activeBreakKey] = timeStr;
     }
+    targetEndTime = null;
     updateControlsState();
     saveData();
   }
@@ -558,6 +623,7 @@
   function resetBreaks() {
     clearInterval(timerInterval);
     timerInterval = null;
+    targetEndTime = null;
     activeBreakName = "";
     activeBreakKey = "";
     
