@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="auto">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
+    /* Color Palette Definitions */
     :root {
       --bg: #f8fafc;
       --card-bg: #ffffff;
@@ -18,28 +19,70 @@
       --accent: #10b981;
       --accent-hover: #059669;
       --border: #e2e8f0;
+      --item-bg: #f1f5f9;
+      --highlight-bg: #eef2ff;
+      --highlight-border: #c7d2fe;
+      --input-bg: #ffffff;
       --radius: 12px;
       --shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
     }
 
+    /* Dark Mode Overrides (Explicit or via System Preference) */
+    [data-theme="dark"] {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --accent: #10b981;
+      --accent-hover: #059669;
+      --border: #334155;
+      --item-bg: #334155;
+      --highlight-bg: #1e1b4b;
+      --highlight-border: #3730a3;
+      --input-bg: #0f172a;
+      --shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      [data-theme="auto"] {
+        --bg: #0f172a;
+        --card-bg: #1e293b;
+        --text: #f8fafc;
+        --text-muted: #94a3b8;
+        --primary: #6366f1;
+        --primary-hover: #4f46e5;
+        --accent: #10b981;
+        --accent-hover: #059669;
+        --border: #334155;
+        --item-bg: #334155;
+        --highlight-bg: #1e1b4b;
+        --highlight-border: #3730a3;
+        --input-bg: #0f172a;
+        --shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
+      }
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-    body { background-color: var(--bg); color: var(--text); padding: 2rem 1rem; display: flex; justify-content: center; }
+    body { background-color: var(--bg); color: var(--text); padding: 2rem 1rem; display: flex; justify-content: center; transition: background-color 0.3s, color 0.3s; }
     .container { max-width: 600px; width: 100%; display: flex; flex-direction: column; gap: 1.25rem; }
 
-    header { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 1.25rem; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); }
+    header { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 1.25rem; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); transition: background-color 0.3s; }
     h1 { font-size: 1.25rem; font-weight: 700; color: var(--text); }
     
-    .header-actions { display: flex; align-items: center; gap: 1rem; }
-    .toggle-container { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; font-weight: 500; color: var(--text-muted); }
-    
-    .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
-    .switch input { opacity: 0; width: 0; height: 0; }
-    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .3s; border-radius: 24px; }
-    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
-    input:checked + .slider { background-color: var(--primary); }
-    input:checked + .slider:before { transform: translateX(20px); }
+    .header-controls { display: flex; align-items: center; gap: 0.75rem; }
+    .theme-select { padding: 0.35rem 0.6rem; border-radius: 8px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); font-size: 0.8rem; font-weight: 500; outline: none; cursor: pointer; }
 
-    .card { background: var(--card-bg); border-radius: var(--radius); padding: 1.5rem; border: 1px solid var(--border); box-shadow: var(--shadow); }
+    .toggle-container { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; font-weight: 500; color: var(--text-muted); }
+    .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .3s; border-radius: 22px; }
+    .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+    input:checked + .slider { background-color: var(--primary); }
+    input:checked + .slider:before { transform: translateX(18px); }
+
+    .card { background: var(--card-bg); border-radius: var(--radius); padding: 1.5rem; border: 1px solid var(--border); box-shadow: var(--shadow); transition: background-color 0.3s, border-color 0.3s; }
     .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
     .card-title { font-size: 1rem; font-weight: 600; }
     
@@ -51,25 +94,25 @@
     label { font-size: 0.85rem; font-weight: 500; color: var(--text-muted); }
     
     input[type="time"], input[type="number"], input[type="text"] { 
-      padding: 0.6rem 0.8rem; border-radius: 8px; border: 1px solid var(--border); font-size: 0.95rem; width: 100%; outline: none; background: #fff;
+      padding: 0.6rem 0.8rem; border-radius: 8px; border: 1px solid var(--border); font-size: 0.95rem; width: 100%; outline: none; background: var(--input-bg); color: var(--text); transition: background-color 0.3s, border-color 0.3s;
     }
     input[type="time"]:focus, input[type="number"]:focus, input[type="text"]:focus { border-color: var(--primary); }
 
     .schedule-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; margin-top: 1rem; }
-    .schedule-item { background: #f1f5f9; padding: 0.75rem; border-radius: 8px; text-align: center; }
+    .schedule-item { background: var(--item-bg); padding: 0.75rem; border-radius: 8px; text-align: center; }
     .schedule-item span { display: block; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
     .schedule-item strong { font-size: 0.95rem; color: var(--text); margin-top: 0.25rem; display: block; }
-    .schedule-item.highlight { background: #eef2ff; border: 1px solid #c7d2fe; }
+    .schedule-item.highlight { background: var(--highlight-bg); border: 1px solid var(--highlight-border); }
 
-    .timer-display { text-align: center; padding: 1rem; background: #eef2ff; border-radius: 8px; margin-bottom: 1rem; border: 1px solid #c7d2fe; }
-    .timer-time { font-size: 2.5rem; font-weight: 800; color: var(--primary); font-variant-numeric: tabular-nums; }
+    .timer-display { text-align: center; padding: 1.25rem 1rem; background: var(--highlight-bg); border-radius: 8px; margin-bottom: 1rem; border: 1px solid var(--highlight-border); }
+    .timer-time { font-size: 2.75rem; font-weight: 800; color: var(--primary); font-variant-numeric: tabular-nums; }
     .timer-label { font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem; font-weight: 500; }
 
     .btn-group { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
     button { background: var(--primary); color: white; border: none; padding: 0.65rem 0.8rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s, opacity 0.2s; font-size: 0.875rem; }
     button:hover { background: var(--primary-hover); }
-    button.secondary { background: #e2e8f0; color: var(--text); }
-    button.secondary:hover { background: #cbd5e1; }
+    button.secondary { background: var(--item-bg); color: var(--text); border: 1px solid var(--border); }
+    button.secondary:hover { opacity: 0.8; }
     button.success { background: var(--accent); color: white; }
     button.success:hover { background: var(--accent-hover); }
     button.danger { background: #ef4444; color: white; }
@@ -78,11 +121,9 @@
 
     /* Grayed out / Disabled state */
     button:disabled, input:disabled {
-      opacity: 0.4;
+      opacity: 0.35 !important;
       cursor: not-allowed !important;
-      pointer-events: none;
-      background-color: #cbd5e1 !important;
-      color: #64748b !important;
+      pointer-events: none !important;
     }
 
     .custom-break { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
@@ -96,7 +137,15 @@
 <div class="container">
   <header>
     <h1>Shift & Break Tracker</h1>
-    <div class="header-actions">
+    <div class="header-controls">
+      <!-- Theme Switcher -->
+      <select id="theme-select" class="theme-select" onchange="changeTheme(this.value)">
+        <option value="auto">💻 System</option>
+        <option value="light">☀️ Light</option>
+        <option value="dark">🌙 Dark</option>
+      </select>
+
+      <!-- Notification Toggle -->
       <div class="toggle-container">
         <span>Notify</span>
         <label class="switch">
@@ -107,7 +156,7 @@
     </div>
   </header>
 
-  <!-- Shift Setup -->
+  <!-- Shift Setup Card -->
   <div class="card">
     <div class="card-header">
       <div class="card-title">Shift Setup</div>
@@ -150,7 +199,7 @@
     </div>
   </div>
 
-  <!-- Active Break Tracker -->
+  <!-- Active Break Tracker Card -->
   <div class="card">
     <div class="card-header">
       <div class="card-title">Active Break Tracker</div>
@@ -181,7 +230,7 @@
 </div>
 
 <script>
-  // Supabase Configuration
+  // Hardcoded Supabase Configuration
   const SUPABASE_URL = "https://vxpufrahrnwmtgltjstd.supabase.co";
   const SUPABASE_KEY = "sb_publishable_tRjMtsoo9aT-6n7dzj9p-w_HsUqJ520";
 
@@ -191,7 +240,6 @@
   let activeBreakKey = "";
   let supabaseClient = null;
 
-  // Track completed breaks and their completion end times
   let completedBreaks = {
     b1: null,
     lunch: null,
@@ -201,16 +249,32 @@
   const shiftStartInput = document.getElementById('shift-start');
   const officialStartInput = document.getElementById('official-start');
   const notifyToggle = document.getElementById('notify-toggle');
+  const themeSelect = document.getElementById('theme-select');
   const timerDisplay = document.getElementById('timer-display');
   const timerLabel = document.getElementById('timer-label');
   const saveIndicator = document.getElementById('save-indicator');
 
   window.addEventListener('DOMContentLoaded', async () => {
+    initTheme();
     initSupabase();
     await loadSavedData();
     calculateSchedule();
     updateControlsState();
   });
+
+  // Theme Management
+  function initTheme() {
+    const savedTheme = localStorage.getItem('theme_pref') || 'auto';
+    themeSelect.value = savedTheme;
+    changeTheme(savedTheme, false);
+  }
+
+  function changeTheme(theme, save = true) {
+    document.documentElement.setAttribute('data-theme', theme);
+    if (save) {
+      localStorage.setItem('theme_pref', theme);
+    }
+  }
 
   shiftStartInput.addEventListener('change', () => { calculateSchedule(); saveData(); });
   officialStartInput.addEventListener('change', () => { calculateSchedule(); saveData(); });
@@ -374,18 +438,14 @@
     } catch (e) {}
   }
 
-  // Update button states & gray out completed options
   function updateControlsState() {
     const isRunning = !!timerInterval;
 
-    // Inputs active when no timer is running
     document.querySelectorAll('.break-input').forEach(i => i.disabled = isRunning);
 
     if (isRunning) {
-      // Gray out all buttons while timer is actively running
       document.querySelectorAll('.break-btn').forEach(b => b.disabled = true);
     } else {
-      // When idle, keep completed breaks grayed out
       document.getElementById('btn-b1').disabled = !!completedBreaks.b1;
       document.getElementById('btn-lunch').disabled = !!completedBreaks.lunch;
       document.getElementById('btn-b2').disabled = !!completedBreaks.b2;
