@@ -8,7 +8,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    /* Color Palette Definitions */
     :root {
       --bg: #f8fafc;
       --card-bg: #ffffff;
@@ -27,7 +26,6 @@
       --shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
     }
 
-    /* Dark Mode Overrides (Explicit or via System Preference) */
     [data-theme="dark"] {
       --bg: #0f172a;
       --card-bg: #1e293b;
@@ -82,11 +80,17 @@
     input:checked + .slider { background-color: var(--primary); }
     input:checked + .slider:before { transform: translateX(18px); }
 
+    /* Mission Mode Tabs */
+    .tab-bar { display: flex; background: var(--item-bg); padding: 4px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 1rem; }
+    .tab-btn { flex: 1; padding: 0.55rem 0.75rem; background: transparent; color: var(--text-muted); border: none; border-radius: 8px; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .tab-btn.active { background: var(--card-bg); color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
     .card { background: var(--card-bg); border-radius: var(--radius); padding: 1.5rem; border: 1px solid var(--border); box-shadow: var(--shadow); transition: background-color 0.3s, border-color 0.3s; }
     .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
     .card-title { font-size: 1rem; font-weight: 600; }
     
-    .save-indicator { font-size: 0.75rem; color: var(--accent); font-weight: 600; opacity: 0; transition: opacity 0.3s; }
+    .sync-status { font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 6px; background: var(--item-bg); color: var(--text-muted); }
+    .save-indicator { font-size: 0.75rem; color: var(--accent); font-weight: 600; opacity: 0; transition: opacity 0.3s; margin-left: 0.5rem; }
     .save-indicator.active { opacity: 1; }
 
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
@@ -99,9 +103,10 @@
     input[type="time"]:focus, input[type="number"]:focus, input[type="text"]:focus { border-color: var(--primary); }
 
     .schedule-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; margin-top: 1rem; }
-    .schedule-item { background: var(--item-bg); padding: 0.75rem; border-radius: 8px; text-align: center; }
+    .schedule-item { background: var(--item-bg); padding: 0.75rem; border-radius: 8px; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; }
     .schedule-item span { display: block; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
     .schedule-item strong { font-size: 0.95rem; color: var(--text); margin-top: 0.25rem; display: block; }
+    .schedule-item input[type="time"] { margin-top: 0.25rem; text-align: center; font-weight: 600; padding: 0.3rem; font-size: 0.85rem; }
     .schedule-item.highlight { background: var(--highlight-bg); border: 1px solid var(--highlight-border); }
 
     .timer-display { text-align: center; padding: 1.25rem 1rem; background: var(--highlight-bg); border-radius: 8px; margin-bottom: 1rem; border: 1px solid var(--highlight-border); }
@@ -119,7 +124,6 @@
     button.danger:hover { background: #dc2626; }
     button.sm { padding: 0.4rem 0.6rem; font-size: 0.75rem; }
 
-    /* Grayed out / Disabled state */
     button:disabled, input:disabled {
       opacity: 0.35 !important;
       cursor: not-allowed !important;
@@ -138,7 +142,7 @@
   <header>
     <h1>Shift & Break Tracker</h1>
     <div class="header-controls">
-      <button class="secondary sm" onclick="refreshData()" title="Refresh and Re-sync Data">🔄 Refresh</button>
+      <button class="secondary sm" onclick="manualRefresh()" title="Refresh and Re-sync Data">🔄 Refresh</button>
 
       <select id="theme-select" class="theme-select" onchange="changeTheme(this.value)">
         <option value="auto">💻 System</option>
@@ -160,7 +164,16 @@
   <div class="card">
     <div class="card-header">
       <div class="card-title">Shift Setup</div>
-      <span class="save-indicator" id="save-indicator">✓ Synced</span>
+      <div>
+        <span class="sync-status" id="sync-status">Checking cloud...</span>
+        <span class="save-indicator" id="save-indicator">✓ Saved</span>
+      </div>
+    </div>
+
+    <!-- Mission Type Tab Selector -->
+    <div class="tab-bar">
+      <button id="tab-ma" class="tab-btn active" onclick="setMissionType('MA')">🚘 MA (Mileage Accumulation)</button>
+      <button id="tab-zip" class="tab-btn" onclick="setMissionType('ZIP')">⚡ ZIP</button>
     </div>
 
     <div class="grid-2">
@@ -180,18 +193,25 @@
     </div>
 
     <div class="schedule-grid">
+      <!-- 1st Break -->
       <div class="schedule-item">
         <span>1st Break (15m)</span>
-        <strong id="sched-b1">11:00 AM</strong>
+        <strong id="sched-b1" class="ma-only">11:00 AM</strong>
+        <input type="time" id="zip-b1" class="zip-only" style="display: none;">
       </div>
+      <!-- Lunch -->
       <div class="schedule-item">
         <span>Lunch (30m)</span>
-        <strong id="sched-lunch">01:00 PM</strong>
+        <strong id="sched-lunch" class="ma-only">01:00 PM</strong>
+        <input type="time" id="zip-lunch" class="zip-only" style="display: none;">
       </div>
+      <!-- 2nd Break -->
       <div class="schedule-item">
         <span>2nd Break (15m)</span>
-        <strong id="sched-b2">03:15 PM</strong>
+        <strong id="sched-b2" class="ma-only">03:15 PM</strong>
+        <input type="time" id="zip-b2" class="zip-only" style="display: none;">
       </div>
+      <!-- Shift End -->
       <div class="schedule-item highlight">
         <span>Shift End</span>
         <strong id="sched-end">05:30 PM</strong>
@@ -230,7 +250,7 @@
 </div>
 
 <script>
-  // Hardcoded Supabase Credentials
+  // Supabase Credentials
   const SUPABASE_URL = "https://vxpufrahrnwmtgltjstd.supabase.co";
   const SUPABASE_KEY = "sb_publishable_tRjMtsoo9aT-6n7dzj9p-w_HsUqJ520";
 
@@ -238,7 +258,9 @@
   let targetEndTime = null;
   let activeBreakName = "";
   let activeBreakKey = "";
+  let currentMission = "MA"; // MA or ZIP
   let supabaseClient = null;
+  let lastServerTimestamp = "";
 
   let completedBreaks = {
     b1: null,
@@ -253,19 +275,74 @@
   const timerDisplay = document.getElementById('timer-display');
   const timerLabel = document.getElementById('timer-label');
   const saveIndicator = document.getElementById('save-indicator');
+  const syncStatus = document.getElementById('sync-status');
+
+  const zipB1Input = document.getElementById('zip-b1');
+  const zipLunchInput = document.getElementById('zip-lunch');
+  const zipB2Input = document.getElementById('zip-b2');
 
   window.addEventListener('DOMContentLoaded', async () => {
     initTheme();
     initSupabase();
-    await loadSavedData();
+    await fetchCloudData();
     calculateSchedule();
     updateControlsState();
+
     setupRealtimeSubscription();
+    setInterval(fetchCloudData, 3000);
   });
 
-  function refreshData() {
+  function setMissionType(type) {
+    currentMission = type;
+    document.getElementById('tab-ma').classList.toggle('active', type === 'MA');
+    document.getElementById('tab-zip').classList.toggle('active', type === 'ZIP');
+
+    const maElements = document.querySelectorAll('.ma-only');
+    const zipElements = document.querySelectorAll('.zip-only');
+
+    if (type === 'MA') {
+      maElements.forEach(el => el.style.display = 'block');
+      zipElements.forEach(el => el.style.display = 'none');
+    } else {
+      maElements.forEach(el => el.style.display = 'none');
+      zipElements.forEach(el => el.style.display = 'block');
+      
+      // Auto-fill ZIP inputs with calculated defaults if empty
+      if (!zipB1Input.value || !zipLunchInput.value || !zipB2Input.value) {
+        populateZipDefaults();
+      }
+    }
+
+    calculateSchedule();
+    saveData();
+  }
+
+  function populateZipDefaults() {
+    const startVal = officialStartInput.value || shiftStartInput.value;
+    if (!startVal) return;
+    const [h, m] = startVal.split(':').map(Number);
+    const start = new Date();
+    start.setHours(h, m, 0, 0);
+
+    const formatInputValue = (date) => {
+      const hh = String(date.getHours()).padStart(2, '0');
+      const mm = String(date.getMinutes()).padStart(2, '0');
+      return `${hh}:${mm}`;
+    };
+
+    if (!zipB1Input.value) zipB1Input.value = formatInputValue(new Date(start.getTime() + 2 * 3600000));
+    if (!zipLunchInput.value) zipLunchInput.value = formatInputValue(new Date(start.getTime() + 4 * 3600000));
+    if (!zipB2Input.value) zipB2Input.value = formatInputValue(new Date(start.getTime() + 6.25 * 3600000));
+  }
+
+  function updateSyncBadge(text, color) {
+    syncStatus.textContent = text;
+    syncStatus.style.color = color;
+  }
+
+  function manualRefresh() {
     showSaveIndicator("🔄 Syncing...");
-    loadSavedData().then(() => {
+    fetchCloudData().then(() => {
       calculateSchedule();
       updateControlsState();
       showSaveIndicator("✓ Refreshed!");
@@ -289,8 +366,13 @@
   officialStartInput.addEventListener('change', () => { calculateSchedule(); saveData(); });
   notifyToggle.addEventListener('change', () => { saveData(); });
 
+  zipB1Input.addEventListener('change', () => saveData());
+  zipLunchInput.addEventListener('change', () => saveData());
+  zipB2Input.addEventListener('change', () => saveData());
+
   function syncOfficialWithShift() {
     officialStartInput.value = shiftStartInput.value;
+    if (currentMission === 'ZIP') populateZipDefaults();
     calculateSchedule();
     saveData();
   }
@@ -300,6 +382,7 @@
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     officialStartInput.value = `${hours}:${minutes}`;
+    if (currentMission === 'ZIP') populateZipDefaults();
     calculateSchedule();
     saveData();
   }
@@ -308,26 +391,28 @@
     const shiftVal = shiftStartInput.value;
     const officialVal = officialStartInput.value || shiftVal;
 
+    // MA Calculation (+2h, +4h, +6.25h)
     if (officialVal) {
       const [oh, om] = officialVal.split(':').map(Number);
       const officialStart = new Date();
       officialStart.setHours(oh, om, 0, 0);
 
-      const b1 = new Date(officialStart.getTime() + 2 * 3600000);         // +2 hrs
-      const lunch = new Date(officialStart.getTime() + 4 * 3600000);      // +4 hrs
-      const b2 = new Date(officialStart.getTime() + 6.25 * 3600000);     // +6h 15m
+      const b1 = new Date(officialStart.getTime() + 2 * 3600000);
+      const lunch = new Date(officialStart.getTime() + 4 * 3600000);
+      const b2 = new Date(officialStart.getTime() + 6.25 * 3600000);
 
       document.getElementById('sched-b1').textContent = formatTime(b1);
       document.getElementById('sched-lunch').textContent = formatTime(lunch);
       document.getElementById('sched-b2').textContent = formatTime(b2);
     }
 
+    // Shift End (+8.5h from Shift Start)
     if (shiftVal) {
       const [sh, sm] = shiftVal.split(':').map(Number);
       const shiftStart = new Date();
       shiftStart.setHours(sh, sm, 0, 0);
 
-      const end = new Date(shiftStart.getTime() + (8.5 * 3600000));     // 8h shift + 30m lunch
+      const end = new Date(shiftStart.getTime() + (8.5 * 3600000));
       document.getElementById('sched-end').textContent = formatTime(end);
     }
   }
@@ -342,7 +427,6 @@
     }
   }
 
-  // Realtime subscription for cross-device updates
   function setupRealtimeSubscription() {
     if (!supabaseClient) return;
     try {
@@ -351,7 +435,6 @@
         .on('postgres_changes', { event: '*', schema: 'public', table: 'shifts' }, (payload) => {
           if (payload.new && payload.new.id === 1) {
             applyStateData(payload.new);
-            showSaveIndicator("⚡ Realtime Sync");
           }
         })
         .subscribe();
@@ -362,63 +445,72 @@
 
   async function saveData() {
     const payload = {
-      shiftStart: shiftStartInput.value,
-      officialStart: officialStartInput.value,
-      notificationsEnabled: notifyToggle.checked,
-      completedBreaks: completedBreaks,
-      activeBreakName: activeBreakName,
-      activeBreakKey: activeBreakKey,
-      targetEndTime: targetEndTime ? targetEndTime.toISOString() : null,
-      lastUpdated: new Date().toISOString()
+      id: 1,
+      shift_start: shiftStartInput.value,
+      official_start: officialStartInput.value,
+      notifications_enabled: notifyToggle.checked,
+      completed_breaks: JSON.stringify({
+        completed: completedBreaks,
+        missionType: currentMission,
+        zipB1: zipB1Input.value,
+        zipLunch: zipLunchInput.value,
+        zipB2: zipB2Input.value
+      }),
+      active_break_name: activeBreakName,
+      active_break_key: activeBreakKey,
+      target_end_time: targetEndTime ? targetEndTime.toISOString() : null,
+      updated_at: new Date().toISOString()
     };
 
     localStorage.setItem('breakTracker_state', JSON.stringify(payload));
-    showSaveIndicator("✓ Synced");
+    showSaveIndicator("✓ Saved");
 
     if (supabaseClient) {
       try {
-        await supabaseClient.from('shifts').upsert([{ 
-          id: 1, 
-          shift_start: payload.shiftStart,
-          official_start: payload.officialStart,
-          notifications_enabled: payload.notificationsEnabled,
-          completed_breaks: JSON.stringify(payload.completedBreaks),
-          active_break_name: payload.activeBreakName,
-          active_break_key: payload.activeBreakKey,
-          target_end_time: payload.targetEndTime,
-          updated_at: payload.lastUpdated
-        }]);
+        const { error } = await supabaseClient.from('shifts').upsert([payload]);
+        if (error) {
+          console.error("Supabase Error:", error);
+          updateSyncBadge("⚠️ Cloud Blocked", "#ef4444");
+        } else {
+          updateSyncBadge("⚡ Live Synced", "#10b981");
+          lastServerTimestamp = payload.updated_at;
+        }
       } catch (err) {
-        console.error("Supabase sync error:", err);
+        console.error("Supabase exception:", err);
+        updateSyncBadge("⚠️ Connection Error", "#ef4444");
       }
     }
   }
 
-  async function loadSavedData() {
-    let loaded = false;
-    if (supabaseClient) {
-      try {
-        const { data, error } = await supabaseClient.from('shifts').select('*').eq('id', 1).single();
-        if (data && !error) {
-          applyStateData(data);
-          loaded = true;
-        }
-      } catch (e) {
-        console.warn("Could not fetch from cloud, falling back to local storage.", e);
-      }
+  async function fetchCloudData() {
+    if (!supabaseClient) {
+      updateSyncBadge("Local Only", "#64748b");
+      return;
     }
 
-    if (!loaded) {
-      const raw = localStorage.getItem('breakTracker_state');
-      if (raw) {
-        try {
-          const data = JSON.parse(raw);
-          if (data.shiftStart) shiftStartInput.value = data.shiftStart;
-          if (data.officialStart) officialStartInput.value = data.officialStart;
-          if (data.notificationsEnabled !== undefined) notifyToggle.checked = data.notificationsEnabled;
-          if (data.completedBreaks) completedBreaks = data.completedBreaks;
-        } catch (e) {}
+    try {
+      const { data, error } = await supabaseClient
+        .from('shifts')
+        .select('*')
+        .eq('id', 1)
+        .maybeSingle();
+
+      if (error) {
+        updateSyncBadge("⚠️ Cloud Blocked", "#ef4444");
+        return;
       }
+
+      if (data) {
+        if (!lastServerTimestamp || data.updated_at !== lastServerTimestamp) {
+          applyStateData(data);
+          lastServerTimestamp = data.updated_at;
+        }
+        updateSyncBadge("⚡ Live Synced", "#10b981");
+      } else {
+        saveData();
+      }
+    } catch (e) {
+      updateSyncBadge("⚠️ Sync Issue", "#f59e0b");
     }
   }
 
@@ -431,9 +523,33 @@
 
     if (data.completed_breaks) {
       try {
-        completedBreaks = typeof data.completed_breaks === 'string' 
+        const parsed = typeof data.completed_breaks === 'string' 
           ? JSON.parse(data.completed_breaks) 
           : data.completed_breaks;
+
+        if (parsed.completed) completedBreaks = parsed.completed;
+        else completedBreaks = parsed; // legacy fallback
+
+        if (parsed.missionType) {
+          currentMission = parsed.missionType;
+          document.getElementById('tab-ma').classList.toggle('active', currentMission === 'MA');
+          document.getElementById('tab-zip').classList.toggle('active', currentMission === 'ZIP');
+          
+          const maElements = document.querySelectorAll('.ma-only');
+          const zipElements = document.querySelectorAll('.zip-only');
+          if (currentMission === 'MA') {
+            maElements.forEach(el => el.style.display = 'block');
+            zipElements.forEach(el => el.style.display = 'none');
+          } else {
+            maElements.forEach(el => el.style.display = 'none');
+            zipElements.forEach(el => el.style.display = 'block');
+          }
+        }
+
+        if (parsed.zipB1) zipB1Input.value = parsed.zipB1;
+        if (parsed.zipLunch) zipLunchInput.value = parsed.zipLunch;
+        if (parsed.zipB2) zipB2Input.value = parsed.zipB2;
+
       } catch(e) {}
     }
 
@@ -447,7 +563,7 @@
       activeBreakName = cloudName;
       activeBreakKey = cloudKey;
       targetEndTime = cloudTarget;
-      runTimer(false); // run timer without trigger save loop
+      runTimer(false);
     } else if (cloudTarget && cloudTarget <= new Date()) {
       if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
       targetEndTime = null;
@@ -456,7 +572,7 @@
         timerDisplay.textContent = "00:00";
         timerLabel.textContent = `✓ ${activeBreakName} completed!`;
       }
-    } else {
+    } else if (!cloudTarget) {
       if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
       targetEndTime = null;
       activeBreakName = "";
@@ -468,7 +584,7 @@
     updateControlsState();
   }
 
-  function showSaveIndicator(text = "✓ Synced") {
+  function showSaveIndicator(text = "✓ Saved") {
     saveIndicator.textContent = text;
     saveIndicator.classList.add('active');
     setTimeout(() => saveIndicator.classList.remove('active'), 1800);
