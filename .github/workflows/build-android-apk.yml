@@ -9,7 +9,7 @@ on:
       - '.github/workflows/build-android-apk.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -49,3 +49,16 @@ jobs:
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish APK on GitHub Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TAG="android-build-${{ github.run_number }}"
+          cp android/app/build/outputs/apk/debug/app-debug.apk Break-Tracker-Android.apk
+          gh release create "$TAG" Break-Tracker-Android.apk \
+            --target "${{ github.sha }}" \
+            --title "Break Tracker Android build #${{ github.run_number }}" \
+            --notes "Android debug APK for testing. Download Break-Tracker-Android.apk under Assets. Android may require permission to install apps from this source." \
+            --latest
