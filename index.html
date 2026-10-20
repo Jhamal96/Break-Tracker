@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Work Shift & Break Tracker</title>
+  <link rel="manifest" href="./manifest.webmanifest"><meta name="theme-color" content="#4f46e5"><link rel="icon" href="./icon.svg">
   <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -160,6 +161,7 @@
     </div>
   </header>
 
+  <nav class="card" style="display:flex;gap:.5rem;flex-wrap:wrap;padding:.75rem"><a href="./index.html" style="flex:1;text-align:center;color:var(--primary);font-weight:700">MA / ZIP Tracker</a><a href="./kitt.html" style="flex:1;text-align:center;color:var(--primary);font-weight:700">🚘 Kitt Break Tracker</a></nav><div class="card" style="display:flex;gap:.5rem;flex-wrap:wrap"><button id="install-app" class="secondary" hidden>Install App</button><button class="secondary" onclick="openFloatingTimer()">▣ Floating Timer</button></div>
   <!-- Shift Setup Card -->
   <div class="card">
     <div class="card-header">
@@ -250,6 +252,10 @@
 </div>
 
 <script>
+  let deferredInstall;
+  window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;document.getElementById('install-app').hidden=false;});
+  window.addEventListener('DOMContentLoaded',()=>{if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(console.warn);document.getElementById('install-app').addEventListener('click',async()=>{if(deferredInstall){await deferredInstall.prompt();deferredInstall=null;}else alert('Use your browser menu to add this website to your home screen.');});});
+  async function openFloatingTimer(){if(!window.documentPictureInPicture){alert('Floating timer is supported in some desktop browsers, including Chrome and Edge.');return;}try{const w=await documentPictureInPicture.requestWindow({width:330,height:170});w.document.body.style='font:600 22px system-ui;background:#111827;color:white;text-align:center;padding:20px';const t=w.document.createElement('div');w.document.body.append(t);const draw=()=>{if(w.closed)return;t.textContent=(document.getElementById('timer-label').textContent||'Break Tracker')+'\\n'+document.getElementById('timer-display').textContent;t.style.whiteSpace='pre-line';};draw();const id=setInterval(()=>{if(w.closed)clearInterval(id);else draw()},1000);}catch(e){alert('Floating display could not open: '+e.message);}}
   // Supabase Credentials
   const SUPABASE_URL = "https://vxpufrahrnwmtgltjstd.supabase.co";
   const SUPABASE_KEY = "sb_publishable_tRjMtsoo9aT-6n7dzj9p-w_HsUqJ520";
@@ -607,7 +613,7 @@
 
   function sendNotification(title, body) {
     if (notifyToggle.checked && Notification.permission === "granted") {
-      new Notification(title, { body, icon: "https://fav.farm/⏰" });
+      if(navigator.serviceWorker?.controller){navigator.serviceWorker.ready.then(r=>r.showNotification(title,{body,icon:'./icon.svg',tag:'shift-break'})).catch(()=>new Notification(title,{body}));}else{new Notification(title,{body});}
     }
     playChime();
   }
