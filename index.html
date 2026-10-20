@@ -135,6 +135,10 @@
     .custom-break input { flex: 1; }
 
     .break-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.75rem; }
+
+/* Compact mobile-first layout */
+body{padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(18px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));-webkit-text-size-adjust:100%}
+.container,main{width:100%;min-width:0;gap:12px}header,.card{padding:16px;box-shadow:none;border-radius:14px}header{gap:8px}h1{font-size:1.1rem;letter-spacing:-.02em}.card-header{gap:10px}.card-title{font-size:.95rem}.settings-wrap{position:relative;margin-left:auto}.settings-trigger{width:40px;height:40px;display:grid;place-items:center;font-size:1.25rem;padding:0}.settings-panel{position:absolute;right:0;top:calc(100% + 8px);width:min(280px,calc(100vw - 32px));z-index:20;background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:14px;box-shadow:0 12px 32px #0002;display:flex;flex-direction:column;gap:12px}.settings-panel[hidden]{display:none!important}.settings-panel .setting-line{display:flex;align-items:center;justify-content:space-between;gap:10px}.settings-panel select{max-width:150px}.settings-panel button{width:100%}.tracker-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.tracker-heading button{font-size:.75rem;white-space:nowrap;padding:8px 10px}.grid-2>*{min-width:0}.schedule-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.schedule-item{min-width:0}.schedule-item input{min-width:0;max-width:100%}.btn-group button{min-width:0;padding:10px 4px;font-size:.76rem}.custom-break{min-width:0}.custom-break input{min-width:0}.custom-break input[type=number]{flex:0 0 66px!important;width:66px!important}.tab-bar{min-width:0}.tab-btn{min-width:0;font-size:.77rem;padding:10px 6px}nav a{min-width:0;font-size:.8rem}input,select,button{max-width:100%}input[type=time],input[type=number],input[type=text]{font-size:16px}@media(max-width:390px){header,.card{padding:13px}.timer-time{font-size:2.2rem}.schedule-grid{gap:8px}.grid-2{gap:8px}.tracker-heading button{font-size:.7rem}.btn-group{gap:5px}}
   </style>
 </head>
 <body>
@@ -142,26 +146,20 @@
 <div class="container">
   <header>
     <h1>Shift & Break Tracker</h1>
-    <div class="header-controls">
-      <button class="secondary sm" onclick="manualRefresh()" title="Refresh and Re-sync Data">🔄 Refresh</button>
-
-      <select id="theme-select" class="theme-select" onchange="changeTheme(this.value)">
+    <div class="settings-wrap"><button class="secondary settings-trigger" id="settings-trigger" type="button" aria-label="Settings" aria-expanded="false" aria-controls="settings-panel" onclick="toggleSettings()">⚙</button><div class="settings-panel" id="settings-panel" hidden><strong>Settings</strong><button class="secondary" onclick="manualRefresh()">↻ Refresh & Sync</button><div class="setting-line"><label for="theme-select">Appearance</label><select id="theme-select" class="theme-select" onchange="changeTheme(this.value)">
         <option value="auto">💻 System</option>
         <option value="light">☀️ Light</option>
         <option value="dark">🌙 Dark</option>
-      </select>
-
-      <div class="toggle-container">
+      </select></div><div class="setting-line"><div class="toggle-container">
         <span>Notify</span>
         <label class="switch">
           <input type="checkbox" id="notify-toggle">
           <span class="slider"></span>
         </label>
-      </div>
-    </div>
+      </div></div><button class="secondary" id="install-app">Install App</button></div></div>
   </header>
 
-  <nav class="card" style="display:flex;gap:.5rem;flex-wrap:wrap;padding:.75rem"><a href="./index.html" style="flex:1;text-align:center;color:var(--primary);font-weight:700">MA / ZIP Tracker</a><a href="./kitt.html" style="flex:1;text-align:center;color:var(--primary);font-weight:700">🚘 Kitt Break Tracker</a></nav><div class="card" style="display:flex;gap:.5rem;flex-wrap:wrap"><button id="install-app" class="secondary">Install App</button><button class="secondary" onclick="openFloatingTimer()">▣ Floating Timer</button></div>
+  <nav class="card" style="display:flex;gap:.5rem;flex-wrap:wrap;padding:.75rem"><a href="./index.html" style="flex:1;text-align:center;color:var(--primary);font-weight:700">MA / ZIP Tracker</a><a href="./kitt.html" style="flex:1;text-align:center;color:var(--primary);font-weight:700">🚘 Kitt Break Tracker</a></nav>
   <!-- Shift Setup Card -->
   <div class="card">
     <div class="card-header">
@@ -223,8 +221,8 @@
 
   <!-- Active Break Tracker Card -->
   <div class="card">
-    <div class="card-header">
-      <div class="card-title">Active Break Tracker</div>
+    <div class="card-header tracker-heading">
+      <div class="card-title">Active Break Tracker</div><button class="secondary sm" onclick="openFloatingTimer()">▣ Floating Timer</button>
     </div>
     
     <div class="timer-display">
@@ -253,6 +251,7 @@
 
 <script>
   function installHelp(){const ua=navigator.userAgent;const samsung=/SamsungBrowser/i.test(ua);if(samsung)return 'Samsung Internet: tap the browser menu (☰), choose Add page to, then Home screen (or Apps, if offered). Confirm Add. If the option is missing, open the site directly in Samsung Internet over HTTPS.';if(/Android/i.test(ua))return 'Android Chrome: tap ⋮ and choose Install app or Add to Home screen. Open the website directly over HTTPS.';if(/iPhone|iPad/i.test(ua))return 'Safari: tap Share, then Add to Home Screen.';return 'Use your browser menu to install or add this website to your home screen.';}
+  function toggleSettings(){const p=document.getElementById('settings-panel');p.hidden=!p.hidden;document.getElementById('settings-trigger').setAttribute('aria-expanded',String(!p.hidden))}document.addEventListener('click',e=>{const wrap=document.querySelector('.settings-wrap');if(wrap&&!wrap.contains(e.target)){document.getElementById('settings-panel').hidden=true;document.getElementById('settings-trigger').setAttribute('aria-expanded','false')}});
   let deferredInstall;
   window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;document.getElementById('install-app').hidden=false;});
   window.addEventListener('DOMContentLoaded',()=>{if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(console.warn);document.getElementById('install-app').addEventListener('click',async()=>{if(window.matchMedia('(display-mode: standalone)').matches){alert('App is already installed.');return;}if(deferredInstall){deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;}else alert(installHelp());});});
