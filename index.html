@@ -658,6 +658,7 @@ body{padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-rig
     const now = new Date();
     targetEndTime = new Date(now.getTime() + durationMinutes * 60000);
     runTimer(true);
+    window.AndroidBreakTracker?.startBreak(activeBreakName,targetEndTime.getTime());
   }
 
   function startCustomBreak() {
@@ -742,9 +743,11 @@ body{padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-rig
     timerDisplay.textContent = "00:00";
     timerLabel.textContent = `✓ ${activeBreakName} completed at ${finishTimeStr}!`;
     playChime();
+    window.AndroidBreakTracker?.stopBreak();
   }
 
   function resetBreaks() {
+    window.AndroidBreakTracker?.stopBreak();
     clearInterval(timerInterval);
     timerInterval = null;
     targetEndTime = null;
