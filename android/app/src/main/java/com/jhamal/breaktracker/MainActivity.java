@@ -236,10 +236,7 @@ public class MainActivity extends Activity {
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
-    private void updatePipParams() {
-        if (Build.VERSION.SDK_INT < 26 ||
-            !getPackageManager().hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)) return;
-
+    private PictureInPictureParams buildPipParams() {
         RemoteAction previous = new RemoteAction(
             Icon.createWithResource(this, android.R.drawable.ic_media_previous),
             "Previous style", "Previous countdown style", styleActionIntent(-1));
@@ -252,7 +249,12 @@ public class MainActivity extends Activity {
             .setActions(Arrays.asList(previous, next));
         if (Build.VERSION.SDK_INT >= 31)
             builder.setAutoEnterEnabled(endMs > System.currentTimeMillis());
-        try { setPictureInPictureParams(builder.build()); } catch (Exception ignored) {}
+        return builder.build();
+    }
+
+    private void updatePipParams() {
+        if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)) return;
+        try { setPictureInPictureParams(buildPipParams()); } catch (Exception ignored) {}
     }
 
     private void sendWarning() {
@@ -271,9 +273,7 @@ public class MainActivity extends Activity {
             getPackageManager().hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE) &&
             !isInPictureInPictureMode()) {
             try {
-                PictureInPictureParams.Builder builder = new PictureInPictureParams.Builder()
-                    .setAspectRatio(new Rational(16, 9));
-                enterPictureInPictureMode(builder.build());
+                enterPictureInPictureMode(buildPipParams());
             } catch (Exception ignored) {}
         }
     }
