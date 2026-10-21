@@ -178,6 +178,7 @@ public class MainActivity extends Activity {
                 // 30-minute meal, a custom preset, or the default 15-minute break.
                 long minutes = 15;
                 String name = label == null ? "" : label;
+                if (endMs == endEpochMs && name.equals(breakName)) return;
                 if (name.toLowerCase(Locale.US).contains("lunch") ||
                     name.toLowerCase(Locale.US).contains("dinner") ||
                     name.toLowerCase(Locale.US).contains("meal")) minutes = 30;
