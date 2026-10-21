@@ -7,5 +7,7 @@
   <activity android:name=".MainActivity" android:exported="true" android:supportsPictureInPicture="true" android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|uiMode" android:resizeableActivity="true">
    <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
   </activity>
+  <!-- Explicit, non-exported receiver for Android's PiP action buttons. -->
+  <receiver android:name=".MainActivity$StyleActionReceiver" android:exported="false"/>
  </application>
 </manifest>
