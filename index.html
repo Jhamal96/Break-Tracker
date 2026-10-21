@@ -734,7 +734,6 @@ async function openFloatingTimer(){
     const now = new Date();
     targetEndTime = new Date(now.getTime() + durationMinutes * 60000);
     runTimer(true);
-    window.AndroidBreakTracker?.startBreak(activeBreakName,targetEndTime.getTime());
   }
 
   function startCustomBreak() {
@@ -765,6 +764,9 @@ async function openFloatingTimer(){
 
   function runTimer(shouldSave = true) {
     clearInterval(timerInterval);
+    if (targetEndTime && targetEndTime.getTime() > Date.now()) {
+      window.AndroidBreakTracker?.startBreak(activeBreakName, targetEndTime.getTime());
+    }
     updateControlsState();
     
     if (shouldSave) saveData();
@@ -797,6 +799,7 @@ async function openFloatingTimer(){
   }
 
   function markBreakCompleted(timeStr) {
+    window.AndroidBreakTracker?.stopBreak();
     if (activeBreakKey && activeBreakKey !== "custom") {
       completedBreaks[activeBreakKey] = timeStr;
     }
