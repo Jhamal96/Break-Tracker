@@ -257,8 +257,67 @@ body{padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-rig
   window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;document.getElementById('install-app').hidden=false;});
   window.addEventListener('DOMContentLoaded',()=>{if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(console.warn);document.getElementById('install-app').addEventListener('click',async()=>{if(window.matchMedia('(display-mode: standalone)').matches){alert('App is already installed.');return;}if(deferredInstall){deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;}else alert(installHelp());});});
   function drawMobileFloatingTimer(){const p=document.getElementById('mobile-float');if(!p||p.hidden)return;document.getElementById('mobile-float-time').textContent=document.getElementById('timer-display')?.textContent||'00:00';document.getElementById('mobile-float-label').textContent=document.getElementById('timer-label')?.textContent||'No active break'}setInterval(drawMobileFloatingTimer,1000);
-function createStyledPiP(w){const d=w.document;d.head.innerHTML='<meta name="viewport" content="width=device-width,initial-scale=1">';const style=d.createElement('style');style.textContent="html,body{margin:0;width:100%;height:100%;overflow:hidden}body{box-sizing:border-box;background:linear-gradient(135deg,#0f172a,#1e3a8a);color:#fff;font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center}.panel{width:100%;padding:14px 18px;box-sizing:border-box;text-align:center}.brand{font-size:10px;font-weight:800;letter-spacing:2px;color:#93c5fd;text-transform:uppercase}.time{font-size:clamp(35px,11vw,56px);line-height:1.12;font-weight:800;letter-spacing:-2px;font-variant-numeric:tabular-nums;margin:4px 0}.label{font-size:13px;font-weight:600;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.status{font-size:11px;color:#93c5fd;margin-top:7px}.progress{height:4px;background:#334155;border-radius:10px;margin-top:10px;overflow:hidden}.bar{height:100%;width:0%;background:#38bdf8;transition:width .5s}";d.head.append(style);d.body.innerHTML='<div class="panel"><div class="brand">⏱ BREAK TRACKER</div><div class="time" id="pip-time">00:00</div><div class="label" id="pip-label">No active break</div><div class="status" id="pip-status">Ready when you are</div><div class="progress"><div class="bar" id="pip-bar"></div></div></div>';}
-  async function openFloatingTimer(){if(!window.documentPictureInPicture){const p=document.getElementById('mobile-float');p.hidden=!p.hidden;drawMobileFloatingTimer();return;}try{const w=await documentPictureInPicture.requestWindow({width:360,height:220});createStyledPiP(w);const draw=()=>{if(w.closed)return;const active=!!(targetEndTime&&targetEndTime.getTime()>Date.now());const seconds=active?Math.max(0,Math.ceil((targetEndTime.getTime()-Date.now())/1000)):0;w.document.getElementById('pip-time').textContent=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');w.document.getElementById('pip-label').textContent=active?(activeBreakName||'Active break'):'No active break';w.document.getElementById('pip-status').textContent=active?(seconds<=180?'Almost time to return':'Break in progress'):'Start a break to begin';w.document.getElementById('pip-bar').style.width=active?'100%':'0%';};draw();const id=setInterval(()=>{if(w.closed)clearInterval(id);else draw()},1000);}catch(e){const p=document.getElementById('mobile-float');p.hidden=false;drawMobileFloatingTimer();}}
+function createStyledPiP(w){
+  const d=w.document;
+  d.head.innerHTML='<meta name="viewport" content="width=device-width,initial-scale=1">';
+  const style=d.createElement('style');
+  style.textContent="\n:root{color-scheme:dark}\n*{box-sizing:border-box}\nhtml,body{margin:0;width:100%;height:100%;overflow:hidden}\nbody{background:linear-gradient(135deg,#0f172a,#172554);color:#f8fafc;font-family:system-ui,-apple-system,Segoe UI,sans-serif}\n.shell{position:relative;width:100%;height:100%;display:flex;flex-direction:column;padding:11px 16px 9px}\n.top{display:flex;align-items:center;justify-content:space-between;flex:0 0 auto;min-height:25px}\n.brand{font-size:10px;font-weight:800;letter-spacing:1.7px;color:#93c5fd}\n.menu-toggle{display:grid;place-items:center;width:30px;height:28px;border:1px solid #536584;border-radius:8px;background:#253654;color:#e2e8f0;cursor:pointer}\n.menu-toggle:hover,.menu-toggle:focus-visible{background:#334b73;outline:2px solid #60a5fa;outline-offset:1px}\n.menu-toggle svg{width:16px;height:16px}\n.menu{position:absolute;right:14px;top:43px;width:159px;z-index:20;padding:5px;background:#1e293b;border:1px solid #506383;border-radius:11px;box-shadow:0 14px 26px #0009}\n.menu[hidden]{display:none}\n.menu-title{font-size:10px;color:#93c5fd;font-weight:800;letter-spacing:.8px;padding:5px 8px}\n.menu button{display:block;width:100%;padding:7px 9px;text-align:left;border:0;border-radius:6px;background:transparent;color:#e2e8f0;cursor:pointer;font:600 12px system-ui}\n.menu button:hover,.menu button:focus-visible{background:#334155;outline:0}\n.menu button[aria-pressed=true]{color:#7dd3fc;background:#263d58}\n.view{display:none;flex:1;min-height:0;align-items:center;justify-content:center;flex-direction:column;text-align:center}\nbody[data-pip-style=digital] .view-digital,body[data-pip-style=dial] .view-dial,body[data-pip-style=speedometer] .view-speedometer,body[data-pip-style=minimal] .view-minimal{display:flex}\n.time{font-weight:850;letter-spacing:-1.5px;font-variant-numeric:tabular-nums;line-height:1.05}\n.view-digital .time{font-size:clamp(34px,10vw,58px)}\n.label{font-size:12px;font-weight:650;color:#e2e8f0;max-width:98%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:4px}\n.status{color:#93c5fd;font-size:10px;letter-spacing:.3px;margin-top:4px;font-weight:600}\n.track{height:5px;width:90%;max-width:275px;border-radius:6px;background:#334155;margin-top:11px;overflow:hidden}\n.bar{height:100%;width:0;background:linear-gradient(90deg,#38bdf8,#818cf8);transition:width .5s}\n.dial{height:min(112px,55vh);width:min(112px,55vh);min-height:70px;min-width:70px;border-radius:50%;padding:7px;background:conic-gradient(#38bdf8 0%,#334155 0%);display:flex;align-items:center;justify-content:center;transition:background .4s}\n.dial-core{background:#172554;width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column}\n.dial .time{font-size:clamp(18px,5.8vw,27px)}\n.dial-small{font-size:8px;font-weight:800;letter-spacing:1px;color:#93c5fd}\n.view-dial .label{font-size:11px;margin-top:5px}\n.view-dial .status{margin-top:2px}\n.gauge{width:min(210px,85vw);height:90px;overflow:visible;margin-top:0}\n.gauge path{fill:none;stroke-width:12;stroke-linecap:round}\n.gauge .bg{stroke:#334155}\n.gauge .fill{stroke:#38bdf8;stroke-dasharray:0 302;transition:stroke-dasharray .5s}\n.view-speedometer .time{font-size:clamp(27px,7vw,38px);margin-top:-30px}\n.view-speedometer .label{margin-top:7px}\n.view-minimal .time{font-size:clamp(40px,12vw,65px);font-weight:550;letter-spacing:1px}\n.view-minimal .label{font-size:11px;letter-spacing:1px;text-transform:uppercase}\n@media(max-height:155px){.shell{padding:5px 10px}.top{min-height:20px}.dial{height:65px;width:65px}.gauge{height:65px;width:155px}.view-speedometer .time{margin-top:-24px}.view-digital .time{font-size:32px}.track{margin-top:5px}.status{margin-top:2px}}\n";
+  d.head.appendChild(style);
+  d.body.innerHTML="<div class=\"shell\">\n  <div class=\"top\"><span class=\"brand\">◷ BREAK TRACKER</span><button class=\"menu-toggle\" id=\"pip-style-menu-toggle\" type=\"button\" title=\"Countdown styles\" aria-label=\"Choose countdown style\" aria-expanded=\"false\" aria-controls=\"pip-style-menu\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M4 6h16M4 12h16M4 18h16\"/></svg></button></div>\n  <div class=\"menu\" id=\"pip-style-menu\" hidden><div class=\"menu-title\">COUNTDOWN STYLE</div><button type=\"button\" data-pip-choice=\"digital\">Digital</button><button type=\"button\" data-pip-choice=\"dial\">Clock Dial</button><button type=\"button\" data-pip-choice=\"speedometer\">Speedometer</button><button type=\"button\" data-pip-choice=\"minimal\">Minimal</button></div>\n  <div class=\"view view-digital\"><div class=\"time\" data-pip-time>00:00</div><div class=\"label\" data-pip-label>No active break</div><div class=\"status\" data-pip-status>Start a break to begin</div><div class=\"track\"><div class=\"bar\" data-pip-bar></div></div></div>\n  <div class=\"view view-dial\"><div class=\"dial\" id=\"pip-dial\"><div class=\"dial-core\"><div class=\"time\" data-pip-time>00:00</div><div class=\"dial-small\">LEFT</div></div></div><div class=\"label\" data-pip-label>No active break</div><div class=\"status\" data-pip-status>Start a break to begin</div></div>\n  <div class=\"view view-speedometer\"><svg class=\"gauge\" viewBox=\"0 0 240 125\" aria-hidden=\"true\"><path class=\"bg\" d=\"M24 113 A96 96 0 0 1 216 113\"/><path class=\"fill\" id=\"pip-gauge-fill\" d=\"M24 113 A96 96 0 0 1 216 113\"/></svg><div class=\"time\" data-pip-time>00:00</div><div class=\"label\" data-pip-label>No active break</div><div class=\"status\" data-pip-status>Start a break to begin</div></div>\n  <div class=\"view view-minimal\"><div class=\"time\" data-pip-time>00:00</div><div class=\"label\" data-pip-label>No active break</div></div>\n</div>";
+  const choices=['digital','dial','speedometer','minimal'];
+  const key='break-tracker-pip-style-v1';
+  const setStyle=(name)=>{
+    const selected=choices.includes(name)?name:'digital';
+    d.body.dataset.pipStyle=selected;
+    d.querySelectorAll('[data-pip-choice]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.pipChoice===selected)));
+    try{localStorage.setItem(key,selected)}catch(e){}
+  };
+  let saved='digital';
+  try{saved=localStorage.getItem(key)||'digital'}catch(e){}
+  setStyle(saved);
+  const menu=d.getElementById('pip-style-menu');
+  const toggle=d.getElementById('pip-style-menu-toggle');
+  const close=()=>{menu.hidden=true;toggle.setAttribute('aria-expanded','false')};
+  toggle.addEventListener('click',()=>{menu.hidden=!menu.hidden;toggle.setAttribute('aria-expanded',String(!menu.hidden))});
+  d.querySelectorAll('[data-pip-choice]').forEach(button=>button.addEventListener('click',()=>{setStyle(button.dataset.pipChoice);close()}));
+  d.addEventListener('keydown',event=>{if(event.key==='Escape')close()});
+  d.addEventListener('click',event=>{if(!menu.hidden&&!menu.contains(event.target)&&!toggle.contains(event.target))close()});
+}
+function updateStyledPiP(w,seconds,totalSeconds,label){
+  if(w.closed)return;
+  const d=w.document;
+  const remain=Math.max(0,seconds);
+  const time=String(Math.floor(remain/60)).padStart(2,'0')+':'+String(remain%60).padStart(2,'0');
+  const active=seconds>0;
+  const status=!active?'Ready when you are':remain<=180?'3 MINUTE WARNING':'Break in progress';
+  const percent=active&&totalSeconds>0?Math.max(0,Math.min(100,(remain/totalSeconds)*100)):0;
+  d.querySelectorAll('[data-pip-time]').forEach(node=>node.textContent=time);
+  d.querySelectorAll('[data-pip-label]').forEach(node=>node.textContent=active?label:'No active break');
+  d.querySelectorAll('[data-pip-status]').forEach(node=>node.textContent=status);
+  d.querySelectorAll('[data-pip-bar]').forEach(node=>node.style.width=percent+'%');
+  d.getElementById('pip-dial').style.background='conic-gradient(#38bdf8 '+percent+'%,#334155 '+percent+'%)';
+  d.getElementById('pip-gauge-fill').style.strokeDasharray=(301.6*percent/100)+' 302';
+}
+async function openFloatingTimer(){
+  if(!window.documentPictureInPicture){
+    const p=document.getElementById('mobile-float');p.hidden=!p.hidden;drawMobileFloatingTimer();return;
+  }
+  try{
+    const w=await documentPictureInPicture.requestWindow({width:370,height:225});
+    createStyledPiP(w);
+    const draw=()=>{
+      if(w.closed)return;
+      const active=!!(targetEndTime&&targetEndTime.getTime()>Date.now());
+      const seconds=active?Math.ceil((targetEndTime.getTime()-Date.now())/1000):0;
+      const configuredMinutes=activeBreakKey==='lunch'?30:activeBreakKey==='custom'?Number((activeBreakName.match(/\((\d+)m\)/)||[])[1])||15:15;
+      updateStyledPiP(w,seconds,configuredMinutes*60,activeBreakName||'Active break');
+    };
+    draw();
+    const id=setInterval(()=>{if(w.closed)clearInterval(id);else draw()},1000);
+  }catch(e){
+    const p=document.getElementById('mobile-float');p.hidden=false;drawMobileFloatingTimer();
+  }
+}
   // Supabase Credentials
   const SUPABASE_URL = "https://vxpufrahrnwmtgltjstd.supabase.co";
   const SUPABASE_KEY = "sb_publishable_tRjMtsoo9aT-6n7dzj9p-w_HsUqJ520";
