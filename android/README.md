@@ -1,18 +1,45 @@
-# Break Tracker Android (native Picture-in-Picture)
+# Break Tracker — Android APK with native Picture-in-Picture
 
-This is a separate Android WebView wrapper for the existing Cloudflare-hosted Break Tracker. The PWA remains intact. The native bridge receives timer start/end events from both MA/ZIP and Kitt and shows a native countdown in Android Picture-in-Picture when you press Home while a break is active.
+The website/PWA stays separate and unchanged by Android-specific code. The APK loads the existing Cloudflare-hosted Break Tracker in a WebView and displays a native Android countdown over the Home screen during an active break.
 
-## Build an APK
-1. Install Android Studio (recent version supporting Android Gradle Plugin 8.7.3) and Android SDK 35.
-2. Open the **android** directory as a project. Allow Gradle sync; use JDK 17.
-3. Select **Build > Build Bundle(s) / APK(s) > Build APK(s)**.
-4. Find the debug APK at `android/app/build/outputs/apk/debug/app-debug.apk` after a successful build. Install on an Android device for testing.
+## Picture-in-Picture: 14 countdown designs
 
-The repository does not include a Gradle wrapper JAR. Android Studio can sync with an available Gradle distribution. No APK is committed or claimed built.
+The native APK now has **14 designs**, matching the names and visual themes in the website's browser PiP picker:
 
-## Important
-- Native PiP requires a device supporting PiP and enabling it in Android settings. Enter PiP by pressing Home during an active timer.
-- The 3-minute warning uses an in-process timer and is not guaranteed if Android stops the app. A foreground service would be needed for robust long-running background notifications.
-- This wrapper loads the production URL: https://break-tracker.jhamal16.workers.dev/. Deploy website changes before testing native timer integration.
-- Only the production origin should be loaded; do not navigate to untrusted websites with the native JavaScript bridge enabled.
-- Kitt still uses browser-local storage, while MA/ZIP uses its existing Supabase setup. No new sync or permissions are introduced.
+Digital, Clock Dial, Speedometer, Minimal, Neon Pulse, Aurora Glass, Retro Flip, Racing HUD, Cosmic Orbit, Sunset Glow, Pixel Arcade, Zen Garden, Ocean Depths, and Blueprint.
+
+### Choose a design
+1. Open the **installed Android APK** and tap **◉ PiP Styles** near the bottom-right corner.
+2. Select a design. Your selection is saved locally on the phone.
+3. Start a break in the MA/ZIP or Kitt tracker, then press Home to enter native PiP on supported phones.
+4. **While PiP is active, tap the floating window** to reveal Android's system PiP controls. Use **Previous style** and **Next style** to cycle through designs without expanding the app. Android controls the PiP menu, so an arbitrary in-window dropdown cannot be made clickable in every Android version.
+5. Tap or expand the floating window to return to the app for the complete 14-style list.
+
+The countdown is drawn natively using Android Canvas, so switching styles does not depend on the browser PiP API. Time and progress update once a second. A warning color appears when three minutes or less remain. Native PiP continues to require a phone that supports Picture-in-Picture and that has it enabled for Break Tracker.
+
+## Download the APK from GitHub
+
+Every successful [Android APK build](https://github.com/Jhamal96/Break-Tracker/actions/workflows/build-android-apk.yml) uploads a ZIP artifact and is configured to attach `Break-Tracker-Android.apk` to a [GitHub Release](https://github.com/Jhamal96/Break-Tracker/releases).
+
+1. Open the latest successful workflow or Release.
+2. Under **Assets**, download `Break-Tracker-Android.apk` (or unzip the workflow artifact and install `app-debug.apk`).
+3. Install it on Android, granting permission to install from this source if prompted.
+
+**Note about updates:** These GitHub builds are *debug* APKs. GitHub runners may generate a fresh debug signing key for a later build. If Android reports a conflicting package signature, the app cannot be installed over the previous APK. **Back up any Kitt data before uninstalling** because uninstalling normally erases the app's local WebView storage. Do not uninstall merely to change PiP style; the 14 designs are included in one APK build.
+
+## Build on a PC or Mac
+
+1. Install [Android Studio](https://developer.android.com/studio) with JDK 17, and Android SDK 35.
+2. Open the `android/` directory as a Gradle project.
+3. Build > Build Bundle(s) / APK(s) > Build APK(s).
+4. The output is `android/app/build/outputs/apk/debug/app-debug.apk`.
+
+Android Studio's local Gradle setup or the GitHub Actions workflow can compile it. The repository does not include a Gradle wrapper JAR.
+
+## Important limitations
+
+- The APK's native PiP UI is separate from Document Picture-in-Picture in desktop browsers. A browser's style menu does not automatically propagate to native Android; the APK saves its own selection.
+- The native timer receives active break information through the website's `AndroidBreakTracker` bridge. The website must be deployed to Cloudflare with that integration; GitHub HTML commits alone do not establish a live deployment.
+- Android can pause or kill background app processes. The 3-minute notification and 1-second UI updates are best effort, not a foreground-service-backed alarm.
+- Native Kitt data still lives in the APK's WebView local storage, independently of the Samsung Internet PWA. MA/ZIP uses its existing Supabase setup.
+- The WebView is intended to load only `https://break-tracker.jhamal16.workers.dev/`. External top-level links open in an external browser instead.
