@@ -2,6 +2,14 @@
 
 Break Tracker website and Android app.
 
+## Android app landing page
+
+The app has a dedicated, mobile-friendly **[Android download page](https://tracker.ajdapp.org/download)** in `download.html`. It links directly to the latest GitHub Release asset at `releases/latest/download/Break-Tracker-Android.apk`, with a secondary link to the GitHub Releases page.
+
+**Cloudflare deployment:** The existing `break-tracker` Worker uses static assets. Include `download.html` in the same deployed static-assets directory as `index.html`, `kitt.html`, `icon.svg`, `sw.js`, and `manifest.webmanifest`. Cloudflare Workers' default HTML handling exposes `download.html` at `/download` without an extra routing script. Avoid deploying the repository's entire root as public assets, because it contains the Android source code and GitHub workflow files.
+
+**Release visibility:** The GitHub repository is private. GitHub may require sign-in and repository access for APK downloads. For public downloads without GitHub authentication, publish the release APK through a separate public download host before advertising the landing page to external visitors.
+
 ## Download Android APK
 
 **[Download the latest Android APK](https://github.com/Jhamal96/Break-Tracker/releases/latest)**
