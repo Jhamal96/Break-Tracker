@@ -9,7 +9,7 @@ The native APK now has **14 designs**, matching the names and visual themes in t
 Digital, Clock Dial, Speedometer, Minimal, Neon Pulse, Aurora Glass, Retro Flip, Racing HUD, Cosmic Orbit, Sunset Glow, Pixel Arcade, Zen Garden, Ocean Depths, and Blueprint.
 
 ### Choose a design
-1. Open the **installed Android APK** and tap **◉ PiP Styles** near the bottom-right corner.
+1. Open the installed Android APK, tap the **Settings (gear)** icon, then choose **◉ PiP Styles & Previews**. Select from 14 visual sample cards.
 2. Select a design. Your selection is saved locally on the phone.
 3. Start a break in the MA/ZIP or Kitt tracker, then press Home to enter native PiP on supported phones.
 4. **While PiP is active, tap the floating window** to reveal Android's system PiP controls. Use **Previous style** and **Next style** to cycle through designs without expanding the app. Android controls the PiP menu, so an arbitrary in-window dropdown cannot be made clickable in every Android version.
@@ -42,4 +42,12 @@ Android Studio's local Gradle setup or the GitHub Actions workflow can compile i
 - The native timer receives active break information through the website's `AndroidBreakTracker` bridge. The website must be deployed to Cloudflare with that integration; GitHub HTML commits alone do not establish a live deployment.
 - Android can pause or kill background app processes. The 3-minute notification and 1-second UI updates are best effort, not a foreground-service-backed alarm.
 - Native Kitt data still lives in the APK's WebView local storage, independently of the Samsung Internet PWA. MA/ZIP uses its existing Supabase setup.
-- The WebView is intended to load only `https://break-tracker.jhamal16.workers.dev/`. External top-level links open in an external browser instead.
+- The WebView is intended to load only `https://tracker.ajdapp.org/`. External top-level links open in an external browser instead.
+
+## New domain and layout (v1.2)
+
+- The Android app now opens **https://tracker.ajdapp.org/**, the Cloudflare custom domain connected to the existing Break Tracker Worker.
+- **Active Break Tracker** appears before **Shift Setup**, including an APK-side layout safeguard if the hosted HTML is temporarily older.
+- The native **PiP Styles & Previews** option is added to the existing website Settings menu inside the APK. The earlier floating blue style-picker button has been removed. The 14-option native preview gallery lets you choose a style before entering PiP.
+- When updating the same installed app, a one-time on-device migration attempts to preserve Kitt records from the old `break-tracker.jhamal16.workers.dev` WebView localStorage origin. Existing records under the new domain take precedence for matching Kitt numbers, and a private local backup of any recovered legacy records is retained.
+- **Keep your old APK installed until you've confirmed your data in the updated app.** GitHub's ephemeral debug signing keys can prevent upgrading in place; uninstalling the old app may erase local Kitt records and defeat migration. If Android rejects the update due to signatures, back up Kitt data before removing the old version.
