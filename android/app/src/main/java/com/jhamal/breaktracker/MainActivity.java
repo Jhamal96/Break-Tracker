@@ -12,7 +12,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.drawable.Icon;
@@ -28,7 +27,9 @@ import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
 import android.widget.FrameLayout;
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
@@ -39,11 +40,12 @@ import java.util.Locale;
  *
  * Native PiP does not pass normal touch events to content. Android exposes
  * previous/next design through the system's PiP RemoteAction controls.
- * All 14 styles are directly selectable with the in-app "PiP Styles" button.
+ * All 14 styles are selectable from the webpage Settings menu via a native preview gallery.
  */
 public class MainActivity extends Activity {
-    private static final String URL = "https://break-tracker.jhamal16.workers.dev/";
-    private static final String HOST = "break-tracker.jhamal16.workers.dev";
+    private static final String URL = "https://tracker.ajdapp.org/";
+    private static final String HOST = "tracker.ajdapp.org";
+    private static final String IN_APP_SETUP_JS = "(function(){\n  try{\n    const root=document.querySelector('.container');\n    if(root){\n      const cards=[...root.children].filter(e=>e.classList&&e.classList.contains('card'));\n      const heading=e=>e.querySelector('.card-title')?.textContent?.trim()||'';\n      const tracker=cards.find(e=>heading(e)==='Active Break Tracker');\n      const shift=cards.find(e=>heading(e)==='Shift Setup');\n      if(tracker&&shift&&tracker!==shift&&tracker.compareDocumentPosition(shift)&Node.DOCUMENT_POSITION_PRECEDING){\n        root.insertBefore(tracker,shift);\n      }\n    }\n    const panel=document.getElementById('settings-panel');\n    if(panel&&!document.getElementById('native-pip-style-entry')){\n      const button=document.createElement('button');\n      button.type='button';button.id='native-pip-style-entry';button.className='secondary';\n      button.textContent='◉ PiP Styles & Previews';\n      button.addEventListener('click',function(){window.AndroidBreakTracker?.openStylePicker();});\n      panel.appendChild(button);\n    }\n  }catch(e){console.warn('Native layout:',e);}\n})();";
     private static final String CHANNEL_ID = "breaks";
     private static final String PREFS = "break_tracker_native";
     private static final String PREF_STYLE = "pip_style";
@@ -56,7 +58,6 @@ public class MainActivity extends Activity {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private WebView web;
     private PiPTimerView pipTimer;
-    private Button chooseStyleButton;
     private long endMs;
     private long durationMs = 15 * 60000L;
     private String breakName = "";
@@ -121,6 +122,13 @@ public class MainActivity extends Activity {
             @Override public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 return routeUrl(Uri.parse(url));
             }
+            @Override public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                Uri uri = Uri.parse(url);
+                if ("https".equalsIgnoreCase(uri.getScheme()) && HOST.equalsIgnoreCase(uri.getHost())) {
+                    view.evaluateJavascript(IN_APP_SETUP_JS, null);
+                }
+            }
         });
         // Only the trusted production origin should receive this privileged JS bridge.
         web.addJavascriptInterface(new Bridge(), "AndroidBreakTracker");
@@ -130,18 +138,6 @@ public class MainActivity extends Activity {
         pipTimer.setStyle(styleIndex);
         pipTimer.setVisibility(View.GONE);
         root.addView(pipTimer, new FrameLayout.LayoutParams(-1, -1));
-
-        chooseStyleButton = new Button(this);
-        chooseStyleButton.setText("◉ PiP Styles");
-        chooseStyleButton.setAllCaps(false);
-        chooseStyleButton.setTextSize(12);
-        chooseStyleButton.setTextColor(Color.WHITE);
-        chooseStyleButton.setBackgroundTintList(ColorStateList.valueOf(Color.rgb(30, 58, 138)));
-        chooseStyleButton.setOnClickListener(v -> showStylePicker());
-        FrameLayout.LayoutParams buttonParams = new FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.WRAP_CONTENT, dp(46), Gravity.END | Gravity.BOTTOM);
-        buttonParams.setMargins(dp(12), dp(12), dp(12), dp(14));
-        root.addView(chooseStyleButton, buttonParams);
 
         setContentView(root);
         NotificationManager notifications = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
@@ -171,6 +167,9 @@ public class MainActivity extends Activity {
     private int dp(float dp) { return Math.round(dp * getResources().getDisplayMetrics().density); }
 
     public final class Bridge {
+        @JavascriptInterface public void openStylePicker() {
+            runOnUiThread(() -> showStylePicker());
+        }
         @JavascriptInterface public void startBreak(String label, long endEpochMs) {
             runOnUiThread(() -> {
                 if (endEpochMs <= System.currentTimeMillis()) return;
@@ -208,14 +207,49 @@ public class MainActivity extends Activity {
     }
 
     private void showStylePicker() {
-        new AlertDialog.Builder(this)
-            .setTitle("Picture-in-Picture countdown style")
-            .setSingleChoiceItems(PiPTimerView.STYLES, styleIndex, (dialog, index) -> {
-                saveStyle(index);
+        ScrollView scroll = new ScrollView(this);
+        LinearLayout choices = new LinearLayout(this);
+        choices.setOrientation(LinearLayout.VERTICAL);
+        choices.setPadding(dp(12), dp(4), dp(12), dp(8));
+        scroll.addView(choices);
+        AlertDialog dialog = new AlertDialog.Builder(this)
+            .setTitle("Choose PiP Style")
+            .setView(scroll)
+            .setNegativeButton("Close", null)
+            .create();
+
+        for (int i = 0; i < PiPTimerView.STYLES.length; i++) {
+            final int selectedStyle = i;
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            row.setPadding(dp(8), dp(7), dp(8), dp(7));
+            row.setBackgroundColor(i == styleIndex ? Color.rgb(224, 238, 255) : Color.rgb(250, 250, 250));
+
+            PiPTimerView preview = new PiPTimerView(this);
+            preview.setStyle(i);
+            preview.setCountdown(765, 900, "Lunch (30m)");
+            row.addView(preview, new LinearLayout.LayoutParams(dp(166), dp(94)));
+
+            TextView name = new TextView(this);
+            name.setText(PiPTimerView.STYLES[i] + (i == styleIndex ? "  ✓" : ""));
+            name.setTextColor(Color.rgb(15, 23, 42));
+            name.setTextSize(13);
+            name.setPadding(dp(9), 0, 0, 0);
+            LinearLayout.LayoutParams nameParams = new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+            row.addView(name, nameParams);
+            row.setContentDescription("Preview " + PiPTimerView.STYLES[i]);
+            row.setOnClickListener(v -> {
+                saveStyle(selectedStyle);
                 dialog.dismiss();
-            })
-            .setNegativeButton("Cancel", null)
-            .show();
+            });
+            choices.addView(row, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+            View gap = new View(this);
+            choices.addView(gap, new LinearLayout.LayoutParams(1, dp(5)));
+        }
+        dialog.show();
     }
 
     private void changeStyle(int direction) {
@@ -283,7 +317,6 @@ public class MainActivity extends Activity {
         super.onPictureInPictureModeChanged(inPip, config);
         pipTimer.setVisibility(inPip ? View.VISIBLE : View.GONE);
         web.setVisibility(inPip ? View.INVISIBLE : View.VISIBLE);
-        chooseStyleButton.setVisibility(inPip ? View.GONE : View.VISIBLE);
         if (inPip) updatePipParams();
     }
 
