@@ -10,4 +10,4 @@ On the Release page, expand **Assets** and download `Break-Tracker-Android.apk`.
 
 The APK is automatically published to GitHub Releases after each successful Android build. You can also find build logs and temporary artifacts under [GitHub Actions](https://github.com/Jhamal96/Break-Tracker/actions/workflows/build-android-apk.yml).
 
-The website is still available at https://break-tracker.jhamal16.workers.dev/.
+The website is still available at https://tracker.ajdapp.org/.
