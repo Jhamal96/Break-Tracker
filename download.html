@@ -211,6 +211,9 @@
       ios:"https://tracker.ajdapp.org/"
     };
     var names={android:"Android",windows:"Windows",mac:"Mac",ios:"iPhone / iPad"};
+    var lead=document.querySelector(".hero .lead"),eyebrow=document.querySelector(".eyebrow"),fine=document.querySelector(".fineprint");
+    var intro=document.querySelector(".how-wrap"),steps=intro&&intro.querySelector(".steps"),disclaimer=document.querySelector(".disclaimer");
+    var old={lead:lead.innerHTML,eyebrow:eyebrow.innerHTML,fine:fine.innerHTML,intro:intro.innerHTML,disclaimer:disclaimer.innerHTML};
     detectedEl.textContent="Detected: "+names[detected];
     function show(){
       document.querySelectorAll("[data-download-os]").forEach(function(el){el.setAttribute("aria-pressed",String(el.dataset.downloadOs===os));});
@@ -220,6 +223,20 @@
       var textNodes=Array.from(btn.childNodes).filter(function(n){return n.nodeType===Node.TEXT_NODE&&n.textContent.trim()});
       if(textNodes[0])textNodes[0].textContent=os==="ios"?" Open web app for iOS ":os==="windows"?" Download for Windows ":os==="mac"?" Download for macOS ":" Download for Android ";
       hint.textContent=os==="ios"?"In Safari, tap Share → Add to Home Screen. iOS cannot install Android APKs.":os==="android"?"Android 8+ · APK requires GitHub sign-in for this private repository.": "Unsigned desktop test build. GitHub may ask you to sign in because the repository is private.";
+
+      if(os==="android"){
+        lead.innerHTML=old.lead;eyebrow.innerHTML=old.eyebrow;fine.innerHTML=old.fine;intro.innerHTML=old.intro;disclaimer.innerHTML=old.disclaimer;
+      }else{
+        eyebrow.textContent=os==="ios"?"iPhone & iPad web experience":"Desktop application";
+        lead.textContent=os==="ios"?"Add Break Tracker to your iPhone or iPad Home Screen from Safari. Your shifts and break timers are ready when you need them.":"Install Break Tracker on "+names[os]+". Keep your familiar MA/ZIP, Kitt tracking and shift planning in a dedicated desktop window.";
+        fine.textContent=os==="ios"?"Add to Home Screen from Safari · No APK required":"Desktop test installer · Online sync · Hosted on private GitHub Releases";
+        if(os==="ios"){
+          intro.innerHTML='<div><span class="kicker">iPhone & iPad</span><h2>Pin Break Tracker to your Home Screen</h2><p>Open the website in Safari, tap the Share icon, then Add to Home Screen. iOS does not run Android APK files.</p></div>';
+        }else{
+          intro.innerHTML='<div><span class="kicker">Desktop installation</span><h2>Install Break Tracker on '+names[os]+'</h2><p>Download the desktop installer above, open it, and follow the system prompts. The app connects to your live Break Tracker website.</p></div>';
+        }
+        disclaimer.textContent="This is an unsigned desktop test build from a private GitHub repository. GitHub sign-in may be required and your operating system may request installation confirmation. The installer opens the hosted website in a standalone window; internet access is needed.";
+      }
     }
     document.querySelectorAll("[data-download-os]").forEach(function(el){el.addEventListener("click",function(){os=el.dataset.downloadOs;show();});});
     show();
