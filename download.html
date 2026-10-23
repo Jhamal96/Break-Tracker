@@ -4,15 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#080e1c">
-  <meta name="description" content="Download Break Tracker for Android. Track MA/ZIP shifts and Kitt breaks, use native Picture-in-Picture countdowns, choose from 14 timer styles, and stay on schedule.">
+  <meta name="description" content="Download Break Tracker for Windows, macOS and Android. Track MA/ZIP shifts and Kitt breaks, use native Picture-in-Picture countdowns, choose from 14 timer styles, and stay on schedule.">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Download Break Tracker for Android">
+  <meta property="og:title" content="Download Break Tracker for Windows, Mac and Android">
   <meta property="og:description" content="Your break timer, always in sight. Native Android Picture-in-Picture, 14 countdown designs, MA/ZIP and Kitt tracking.">
   <meta property="og:url" content="https://tracker.ajdapp.org/download">
   <meta property="og:image" content="https://tracker.ajdapp.org/icon.svg">
   <link rel="canonical" href="https://tracker.ajdapp.org/download">
   <link rel="icon" type="image/svg+xml" href="/icon.svg">
-  <title>Download Break Tracker for Android | AJD Apps</title>
+  <title>Download Break Tracker for Windows, Mac and Android | AJD Apps</title>
   <style>
     :root{color-scheme:dark;--bg:#080e1c;--panel:#111b31;--line:#24344e;--text:#f4f7ff;--muted:#acbad0;--mint:#72f0c3;--violet:#a5a7ff}
     *,*::before,*::after{box-sizing:border-box}
@@ -105,7 +105,15 @@
     @media(max-width:720px){.wrap{width:min(100% - 28px,540px)}.topbar{padding:16px 0}.identity{font-size:17px}.toplinks{gap:8px}.toplinks a:first-child{display:none}.toplinks .ghostlink{padding:9px 12px}.hero{grid-template-columns:1fr;gap:2px;text-align:left;padding:27px 0 45px}.hero-art{min-height:412px}.phone{height:400px;width:225px}.pip{right:3%;bottom:37px;width:224px}.pip-time{font-size:43px}.preview-note{right:3%}.features{grid-template-columns:1fr 1fr}.feature{min-height:170px;padding:18px}.style-band{margin:42px 0;padding:23px}.how-wrap{padding-bottom:43px}}
     @media(max-width:450px){h1{font-size:clamp(40px,11vw,56px)}.lead{font-size:15px}.actions{flex-direction:column}.actions>a{width:100%}.hero-art{min-height:393px}.phone{margin-left:-30px}.pip{right:0;bottom:35px}.features{grid-template-columns:1fr}.feature{min-height:auto}.mini-styles{gap:6px}.mini{width:73px}.style-band{padding:22px 18px}.how-wrap{gap:15px}}
     @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.primary,.secondary{transition:none}}
-  </style>
+  
+    .device-selector{margin:22px 0 0;padding:17px;border:1px solid #36506a;background:#111e33;border-radius:18px}
+    .device-selector p{margin:0 0 11px;font-size:13px;color:#bfd0e7}
+    .device-options{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+    .device-options button{background:#172941;color:#e2efff;border:1px solid #415571;padding:12px 7px;border-radius:12px;font-weight:800;cursor:pointer}
+    .device-options button[aria-pressed="true"]{border-color:#72f0c3;background:#203e46;color:#b0ffe5}
+    .device-hint{margin-top:10px;color:#aabbd2;font-size:12px}
+    @media(max-width:580px){.device-options{grid-template-columns:repeat(2,1fr)}}
+</style>
 </head>
 <body>
   <div class="wrap">
@@ -114,6 +122,16 @@
       <div class="toplinks"><a href="/kitt.html">Kitt Tracker</a><a class="ghostlink" href="/">← Back to tracker</a></div>
     </nav>
     <main>
+      <section class="device-selector" aria-label="Choose your device">
+        <p><strong id="detected-os">Detecting your device…</strong> — the download button will match your device automatically.</p>
+        <div class="device-options" role="group" aria-label="Available platforms">
+          <button type="button" data-download-os="android" aria-pressed="false">🤖 Android</button>
+          <button type="button" data-download-os="windows" aria-pressed="false">🪟 Windows</button>
+          <button type="button" data-download-os="mac" aria-pressed="false">🍎 macOS</button>
+          <button type="button" data-download-os="ios" aria-pressed="false">📱 iPhone/iPad</button>
+        </div>
+        <p class="device-hint" id="device-hint" aria-live="polite"></p>
+      </section>
       <section class="hero" aria-labelledby="hero-title">
         <div>
           <span class="eyebrow"><span class="online-dot"></span> Native Android experience</span>
@@ -179,5 +197,33 @@
     </main>
     <footer><span>© Break Tracker · Part of AJD Apps</span><span><a href="/">Open Tracker</a> &nbsp;·&nbsp; <a href="https://github.com/Jhamal96/Break-Tracker/releases/latest" rel="noopener">Latest Release</a></span></footer>
   </div>
+
+  <script>
+  (function(){
+    "use strict";
+    var agent=navigator.userAgent||"",p=navigator.userAgentData&&navigator.userAgentData.platform||navigator.platform||"";
+    var detected=/iPad|iPhone|iPod/i.test(agent)||(p==="MacIntel"&&navigator.maxTouchPoints>1)?"ios":/Android/i.test(agent)?"android":/Win/i.test(p)||/Windows/i.test(agent)?"windows":/Mac/i.test(p)||/Mac OS X/i.test(agent)?"mac":"android";
+    var os=detected,btn=document.getElementById("download-apk"),hint=document.getElementById("device-hint"),detectedEl=document.getElementById("detected-os");
+    var urls={
+      android:"https://github.com/Jhamal96/Break-Tracker/releases/latest/download/Break-Tracker-Android.apk",
+      windows:"https://github.com/Jhamal96/Break-Tracker/releases/download/desktop-latest/Break-Tracker-Windows-Setup.exe",
+      mac:"https://github.com/Jhamal96/Break-Tracker/releases/download/desktop-latest/Break-Tracker-macOS.dmg",
+      ios:"https://tracker.ajdapp.org/"
+    };
+    var names={android:"Android",windows:"Windows",mac:"Mac",ios:"iPhone / iPad"};
+    detectedEl.textContent="Detected: "+names[detected];
+    function show(){
+      document.querySelectorAll("[data-download-os]").forEach(function(el){el.setAttribute("aria-pressed",String(el.dataset.downloadOs===os));});
+      btn.href=urls[os];
+      btn.setAttribute("aria-label",os==="ios"?"Open Break Tracker website for iOS installation":"Download Break Tracker for "+names[os]);
+      var svgs=btn.querySelectorAll("svg");svgs.forEach(function(svg){svg.style.display=os==="android"?"":"none";});
+      var textNodes=Array.from(btn.childNodes).filter(function(n){return n.nodeType===Node.TEXT_NODE&&n.textContent.trim()});
+      if(textNodes[0])textNodes[0].textContent=os==="ios"?" Open web app for iOS ":os==="windows"?" Download for Windows ":os==="mac"?" Download for macOS ":" Download for Android ";
+      hint.textContent=os==="ios"?"In Safari, tap Share → Add to Home Screen. iOS cannot install Android APKs.":os==="android"?"Android 8+ · APK requires GitHub sign-in for this private repository.": "Unsigned desktop test build. GitHub may ask you to sign in because the repository is private.";
+    }
+    document.querySelectorAll("[data-download-os]").forEach(function(el){el.addEventListener("click",function(){os=el.dataset.downloadOs;show();});});
+    show();
+  })();
+  </script>
 </body>
 </html>
