@@ -45,6 +45,9 @@ import java.util.Locale;
 public class MainActivity extends Activity {
     private static final String URL = "https://tracker.ajdapp.org/";
     private static final String HOST = "tracker.ajdapp.org";
+    private static final String OLD_URL = "https://break-tracker.jhamal16.workers.dev/";
+    private static final String PREF_LEGACY_READ = "legacy_kitt_checked";
+    private static final String PREF_LEGACY_KITT = "legacy_kitt_backup";
     private static final String IN_APP_SETUP_JS = "(function(){\n  try{\n    const root=document.querySelector('.container');\n    if(root){\n      const cards=[...root.children].filter(e=>e.classList&&e.classList.contains('card'));\n      const heading=e=>e.querySelector('.card-title')?.textContent?.trim()||'';\n      const tracker=cards.find(e=>heading(e)==='Active Break Tracker');\n      const shift=cards.find(e=>heading(e)==='Shift Setup');\n      if(tracker&&shift&&tracker!==shift&&tracker.compareDocumentPosition(shift)&Node.DOCUMENT_POSITION_PRECEDING){\n        root.insertBefore(tracker,shift);\n      }\n    }\n    const panel=document.getElementById('settings-panel');\n    if(panel&&!document.getElementById('native-pip-style-entry')){\n      const button=document.createElement('button');\n      button.type='button';button.id='native-pip-style-entry';button.className='secondary';\n      button.textContent='◉ PiP Styles & Previews';\n      button.addEventListener('click',function(){window.AndroidBreakTracker?.openStylePicker();});\n      panel.appendChild(button);\n    }\n  }catch(e){console.warn('Native layout:',e);}\n})();";
     private static final String CHANNEL_ID = "breaks";
     private static final String PREFS = "break_tracker_native";
@@ -57,6 +60,7 @@ public class MainActivity extends Activity {
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private WebView web;
+    private WebView legacyStorageWeb;
     private PiPTimerView pipTimer;
     private long endMs;
     private long durationMs = 15 * 60000L;
@@ -127,6 +131,7 @@ public class MainActivity extends Activity {
                 Uri uri = Uri.parse(url);
                 if ("https".equalsIgnoreCase(uri.getScheme()) && HOST.equalsIgnoreCase(uri.getHost())) {
                     view.evaluateJavascript(IN_APP_SETUP_JS, null);
+                    importLegacyKittIfNeeded();
                 }
             }
         });
@@ -149,8 +154,90 @@ public class MainActivity extends Activity {
         }
 
         web.loadUrl(URL);
+        startLegacyKittMigration(root);
         updatePipParams();
         handler.post(ticker);
+    }
+
+
+    /**
+     * Domain migration: WebView localStorage is keyed by origin. Read the old
+     * app origin once using a tiny offline document (no remote page fetch),
+     * then copy records that do not already exist on the new origin.
+     * Preserve the original JSON in private preferences as a local backup.
+     */
+    private void startLegacyKittMigration(FrameLayout root) {
+        android.content.SharedPreferences preferences = getSharedPreferences(PREFS, MODE_PRIVATE);
+        if (preferences.getBoolean(PREF_LEGACY_READ, false)) {
+            importLegacyKittIfNeeded();
+            return;
+        }
+        try {
+            legacyStorageWeb = new WebView(this);
+            legacyStorageWeb.getSettings().setJavaScriptEnabled(true);
+            legacyStorageWeb.getSettings().setDomStorageEnabled(true);
+            legacyStorageWeb.setVisibility(View.INVISIBLE);
+            root.addView(legacyStorageWeb, new FrameLayout.LayoutParams(1, 1));
+            legacyStorageWeb.setWebViewClient(new WebViewClient() {
+                @Override public void onPageFinished(WebView view, String url) {
+                    view.evaluateJavascript(
+                        "(function(){try{return localStorage.getItem('kitt-break-tracker-v1')||'';}catch(e){return '';}})()",
+                        result -> {
+                            String legacyJson = "";
+                            try {
+                                Object decoded = new org.json.JSONTokener(result).nextValue();
+                                if (decoded instanceof String) legacyJson = (String) decoded;
+                                if (!legacyJson.isEmpty()) new org.json.JSONArray(legacyJson);
+                            } catch (Exception ignored) { legacyJson = ""; }
+                            android.content.SharedPreferences.Editor edit = preferences.edit()
+                                .putBoolean(PREF_LEGACY_READ, true);
+                            if (!legacyJson.isEmpty()) edit.putString(PREF_LEGACY_KITT, legacyJson);
+                            edit.apply();
+                            if (legacyStorageWeb != null) {
+                                root.removeView(legacyStorageWeb);
+                                legacyStorageWeb.destroy();
+                                legacyStorageWeb = null;
+                            }
+                            importLegacyKittIfNeeded();
+                        });
+                }
+            });
+            legacyStorageWeb.loadDataWithBaseURL(
+                OLD_URL, "<!doctype html><html><head><title>Local data migration</title></head><body></body></html>",
+                "text/html", "UTF-8", null);
+        } catch (Exception ignored) {
+            if (legacyStorageWeb != null) {
+                root.removeView(legacyStorageWeb);
+                legacyStorageWeb.destroy();
+                legacyStorageWeb = null;
+            }
+        }
+    }
+
+    private void importLegacyKittIfNeeded() {
+        if (web == null || web.getUrl() == null) return;
+        Uri current = Uri.parse(web.getUrl());
+        if (!"https".equalsIgnoreCase(current.getScheme()) ||
+            !HOST.equalsIgnoreCase(current.getHost())) return;
+        String backup = getSharedPreferences(PREFS, MODE_PRIVATE).getString(PREF_LEGACY_KITT, "");
+        if (backup.isEmpty()) return;
+        String script = "(function(){try{" +
+            "const key='kitt-break-tracker-v1';" +
+            "const old=JSON.parse(" + org.json.JSONObject.quote(backup) + ");" +
+            "const saved=localStorage.getItem(key);" +
+            "const current=saved?JSON.parse(saved):[];" +
+            "if(!Array.isArray(old)||!Array.isArray(current))return 'invalid';" +
+            "const present=new Set(current.map(v=>String(v.number)));" +
+            "let added=0;for(const v of old){" +
+            "const num=String(v&&v.number);if(/^\\d+$/.test(num)&&!present.has(num)){" +
+            "current.push(v);present.add(num);added++;}}" +
+            "if(added)localStorage.setItem(key,JSON.stringify(current));" +
+            "return added?'imported':'unchanged';" +
+            "}catch(e){return 'error';}})()";
+        web.evaluateJavascript(script, result -> {
+            if ("\"imported\"".equals(result) && web != null && web.getUrl() != null &&
+                web.getUrl().contains("/kitt.html")) web.reload();
+        });
     }
 
     private boolean routeUrl(Uri uri) {
@@ -328,6 +415,7 @@ public class MainActivity extends Activity {
     @Override public void onDestroy() {
         handler.removeCallbacks(ticker);
         if (visibleActivity.get() == this) visibleActivity.clear();
+        if (legacyStorageWeb != null) { legacyStorageWeb.destroy(); legacyStorageWeb = null; }
         if (web != null) web.destroy();
         super.onDestroy();
     }
