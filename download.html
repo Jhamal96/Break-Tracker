@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#080e1c">
+  <meta name="description" content="Download Break Tracker for Android. Track MA/ZIP shifts and Kitt breaks, use native Picture-in-Picture countdowns, choose from 14 timer styles, and stay on schedule.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Download Break Tracker for Android">
+  <meta property="og:description" content="Your break timer, always in sight. Native Android Picture-in-Picture, 14 countdown designs, MA/ZIP and Kitt tracking.">
+  <meta property="og:url" content="https://tracker.ajdapp.org/download">
+  <meta property="og:image" content="https://tracker.ajdapp.org/icon.svg">
+  <link rel="canonical" href="https://tracker.ajdapp.org/download">
+  <link rel="icon" type="image/svg+xml" href="/icon.svg">
+  <title>Download Break Tracker for Android | AJD Apps</title>
+  <style>
+    :root{color-scheme:dark;--bg:#080e1c;--panel:#111b31;--line:#24344e;--text:#f4f7ff;--muted:#acbad0;--mint:#72f0c3;--violet:#a5a7ff}
+    *,*::before,*::after{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow-x:hidden}
+    body::before{content:"";position:absolute;top:-370px;left:50%;transform:translateX(-50%);width:min(1200px,155vw);height:900px;background:radial-gradient(ellipse at 34% 44%,#4254c733,transparent 54%),radial-gradient(ellipse at 70% 41%,#148d8750,transparent 52%);z-index:-1;pointer-events:none}
+    a{color:inherit;text-decoration:none}
+    button,a{-webkit-tap-highlight-color:transparent}
+    a:focus-visible{outline:3px solid var(--mint);outline-offset:4px}
+    .wrap{width:min(1120px,calc(100% - 40px));margin:0 auto}
+    .topbar{display:flex;align-items:center;justify-content:space-between;padding:24px 0;gap:16px}
+    .identity{display:inline-flex;align-items:center;gap:11px;font-weight:850;letter-spacing:-.03em;font-size:19px;white-space:nowrap}
+    .identity img{width:39px;height:39px;display:block;border-radius:11px;box-shadow:0 7px 22px #02061766}
+    .identity span span{color:var(--mint)}
+    .toplinks{display:flex;align-items:center;gap:20px;font-size:13px;font-weight:700;color:#d0daf1}
+    .toplinks a:hover{color:var(--mint)}
+    .toplinks .ghostlink{border:1px solid #394a66;padding:10px 14px;border-radius:12px}
+    main{padding:28px 0 0}
+    .hero{display:grid;grid-template-columns:1.05fr .95fr;align-items:center;gap:55px;min-height:525px;padding:22px 0 76px}
+    .eyebrow{display:inline-flex;align-items:center;gap:9px;border:1px solid #3c665f;background:#16403a88;color:#a3ffe0;border-radius:99px;padding:7px 13px;font-size:11px;font-weight:850;letter-spacing:.12em;text-transform:uppercase}
+    .online-dot{width:7px;height:7px;display:inline-block;border-radius:50%;background:#72f0c3;box-shadow:0 0 12px #72f0c388}
+    h1{font-size:clamp(43px,5.2vw,73px);letter-spacing:-.065em;line-height:1.07;margin:22px 0 20px;font-weight:850}
+    .color-text{background:linear-gradient(102deg,#a5a7ff 6%,#7fdcfa 52%,#72f0c3 100%);background-clip:text;-webkit-background-clip:text;color:transparent}
+    .lead{font-size:17px;color:#c0cde0;max-width:520px;line-height:1.8;margin:0}
+    .actions{display:flex;flex-wrap:wrap;gap:13px;margin-top:31px}
+    .primary,.secondary{display:inline-flex;align-items:center;justify-content:center;gap:11px;padding:15px 22px;border-radius:14px;font-size:14px;font-weight:850;line-height:1.15;transition:transform .15s,box-shadow .15s,background .15s}
+    .primary{color:#041910;background:linear-gradient(135deg,#9afbd4,#62e5b2);box-shadow:0 12px 38px #21c08a35}
+    .primary:hover{transform:translateY(-2px);box-shadow:0 17px 44px #21c08a55}
+    .secondary{color:#eaf2ff;border:1px solid #41536d;background:#142036}
+    .secondary:hover{background:#1d2e4a;transform:translateY(-2px)}
+    .android-logo{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+    .fineprint{margin-top:15px;font-size:12px;color:#9daec6;line-height:1.7}
+    .fineprint .sep{padding:0 7px;color:#62748f}
+    .hero-art{position:relative;min-height:482px;display:flex;align-items:center;justify-content:center}
+    .halo{position:absolute;width:390px;height:390px;border-radius:50%;background:radial-gradient(circle,#3875ad22 0%,#4b52b622 45%,transparent 72%);filter:blur(2px)}
+    .phone{position:relative;width:256px;height:454px;transform:rotate(-5deg);padding:9px;border:2px solid #475a7b;border-radius:39px;background:#111828;box-shadow:22px 25px 65px #030817bf,0 0 0 4px #ffffff08;z-index:1}
+    .phone-screen{height:100%;overflow:hidden;border-radius:30px;background:#e9eef7;color:#111a30;padding:18px 12px;display:flex;flex-direction:column;gap:12px}
+    .island{width:70px;height:14px;background:#111828;border-radius:0 0 10px 10px;margin:-18px auto 5px}
+    .mock-top{font-size:11px;font-weight:850;display:flex;justify-content:space-between;align-items:center;padding:4px 1px}
+    .mock-top small{color:#61718b;font-size:9px}
+    .mock-card{border:1px solid #dbe3ee;border-radius:16px;background:#fff;padding:15px 12px;box-shadow:0 3px 8px #1022380b}
+    .mock-label{font-size:11px;font-weight:800}
+    .mock-gear{font-size:13px;color:#53637c}
+    .mock-time{border-radius:12px;background:#edf0ff;margin-top:12px;padding:14px 8px;text-align:center;border:1px solid #d7ddfa}
+    .mock-time strong{display:block;font-size:41px;font-weight:850;letter-spacing:-.04em;color:#5551e7;line-height:1.1}
+    .mock-time span{font-size:9px;color:#6c7890}
+    .mock-pills{display:flex;gap:5px;margin-top:10px}
+    .mock-pills span{flex:1;border-radius:7px;background:#c8c3f7;height:26px}
+    .mock-muted{display:block;background:#e8edf4;height:13px;border-radius:5px;margin-bottom:10px}
+    .mock-muted.short{width:60%}
+    .mock-schedule{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+    .mock-schedule span{height:42px;border-radius:8px;background:#f0f3f8;display:flex;align-items:center;justify-content:center;color:#697b96;font-size:10px;font-weight:700}
+    .pip{position:absolute;right:-1%;bottom:41px;width:245px;border:1px solid #6276af;border-radius:19px;padding:13px 17px 15px;box-shadow:0 22px 45px #0206179c;z-index:2;background:linear-gradient(125deg,#121a36,#262e77);transform:rotate(4deg)}
+    .pip-top{display:flex;justify-content:space-between;gap:8px;align-items:center;color:#bfc8ff;font-size:9px;font-weight:850;letter-spacing:.12em}
+    .pip-time{text-align:center;font-size:49px;font-weight:850;letter-spacing:-.06em;color:#fff;line-height:1.35}
+    .pip-label{text-align:center;font-size:11px;color:#d7defd;font-weight:700}
+    .pip-progress{height:5px;background:#384372;border-radius:8px;margin-top:13px;overflow:hidden}
+    .pip-progress span{display:block;width:76%;height:100%;background:linear-gradient(90deg,#6d98ff,#72f0c3);border-radius:8px}
+    .preview-note{position:absolute;right:2%;bottom:12px;font-size:10px;color:#9babca}
+    .feature-head{text-align:center;margin:0 auto 27px;max-width:680px}
+    .kicker{font-size:11px;font-weight:850;color:#82eac5;letter-spacing:.18em;text-transform:uppercase}
+    h2{font-size:clamp(27px,3.4vw,42px);line-height:1.18;letter-spacing:-.046em;margin:10px 0}
+    .section-copy{color:var(--muted);margin:0}
+    .features{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+    .feature{border:1px solid var(--line);border-radius:20px;background:linear-gradient(155deg,#17233a,#11192b);padding:23px;min-height:190px}
+    .feature-icon{width:41px;height:41px;border-radius:12px;display:grid;place-items:center;background:#293654;color:#99f6e4;font-size:20px;margin-bottom:16px}
+    .feature h3{font-size:15px;letter-spacing:-.02em;margin:0 0 7px}
+    .feature p{font-size:13px;color:#b3c0d5;line-height:1.75;margin:0}
+    .style-band{display:flex;gap:24px;align-items:center;justify-content:space-between;margin:65px 0;border:1px solid #33436a;background:radial-gradient(ellipse at 97% 15%,#514abb44,transparent 60%),linear-gradient(115deg,#17213c,#171f37);border-radius:25px;padding:29px 36px}
+    .style-band h2{font-size:26px;margin:5px 0}
+    .style-band p{font-size:13px;color:#c2c9e2;margin:0;max-width:525px}
+    .mini-styles{display:flex;gap:10px;flex:0 0 auto}
+    .mini{width:78px;height:84px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px;border:1px solid #ffffff3a;box-shadow:0 7px 18px #0003}
+    .mini strong{font-size:17px;font-weight:850;letter-spacing:-.06em}
+    .mini span{font-size:9px;font-weight:700}
+    .mini.one{background:#35114b;color:#f0abfc}.mini.two{background:#143b50;color:#99f6e4}.mini.three{background:#151a24;color:#fde047}
+    .how-wrap{display:grid;grid-template-columns:.8fr 1.2fr;gap:42px;align-items:start;padding-bottom:65px}
+    .how-wrap h2{margin-bottom:10px}
+    .how-wrap p{color:#a9b8cf;font-size:14px}
+    .steps{display:grid;gap:11px;counter-reset:download-step}
+    .step{display:flex;gap:15px;align-items:start;border:1px solid #2b3a52;border-radius:15px;background:#101a2b;padding:17px}
+    .number{width:31px;height:31px;border-radius:10px;display:grid;place-items:center;background:#253651;color:#99f6d7;font-size:13px;font-weight:850;flex:0 0 31px}
+    .step h3{font-size:14px;margin:0 0 4px}
+    .step p{font-size:12px;margin:0;color:#aebcd2;line-height:1.7}
+    .disclaimer{padding:17px 20px;border-radius:15px;border:1px solid #3b4564;background:#111c30;color:#bac7de;font-size:12px;line-height:1.75;margin-bottom:42px}
+    .disclaimer strong{color:#e2e9ff}
+    footer{border-top:1px solid #253248;padding:23px 0 31px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;font-size:12px;color:#93a6c0}
+    footer a{color:#cddaf0;text-decoration:underline;text-underline-offset:3px}
+    @media(max-width:900px){.hero{gap:20px;grid-template-columns:1fr 1fr}.pip{right:-6%}.style-band{flex-direction:column;align-items:start}.how-wrap{grid-template-columns:1fr}}
+    @media(max-width:720px){.wrap{width:min(100% - 28px,540px)}.topbar{padding:16px 0}.identity{font-size:17px}.toplinks{gap:8px}.toplinks a:first-child{display:none}.toplinks .ghostlink{padding:9px 12px}.hero{grid-template-columns:1fr;gap:2px;text-align:left;padding:27px 0 45px}.hero-art{min-height:412px}.phone{height:400px;width:225px}.pip{right:3%;bottom:37px;width:224px}.pip-time{font-size:43px}.preview-note{right:3%}.features{grid-template-columns:1fr 1fr}.feature{min-height:170px;padding:18px}.style-band{margin:42px 0;padding:23px}.how-wrap{padding-bottom:43px}}
+    @media(max-width:450px){h1{font-size:clamp(40px,11vw,56px)}.lead{font-size:15px}.actions{flex-direction:column}.actions>a{width:100%}.hero-art{min-height:393px}.phone{margin-left:-30px}.pip{right:0;bottom:35px}.features{grid-template-columns:1fr}.feature{min-height:auto}.mini-styles{gap:6px}.mini{width:73px}.style-band{padding:22px 18px}.how-wrap{gap:15px}}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.primary,.secondary{transition:none}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <nav class="topbar" aria-label="Main navigation">
+      <a class="identity" href="/" aria-label="Break Tracker homepage"><img src="/icon.svg" alt="" width="39" height="39"><span>Break<span>Tracker</span></span></a>
+      <div class="toplinks"><a href="/kitt.html">Kitt Tracker</a><a class="ghostlink" href="/">← Back to tracker</a></div>
+    </nav>
+    <main>
+      <section class="hero" aria-labelledby="hero-title">
+        <div>
+          <span class="eyebrow"><span class="online-dot"></span> Native Android experience</span>
+          <h1 id="hero-title">Your break time,<br><span class="color-text">always in sight.</span></h1>
+          <p class="lead">Meet Break Tracker for Android — an easier way to manage your shift, time your breaks, and keep your countdown visible in Picture-in-Picture while you use your phone.</p>
+          <div class="actions">
+            <a class="primary" id="download-apk" href="https://github.com/Jhamal96/Break-Tracker/releases/latest/download/Break-Tracker-Android.apk" rel="noopener" aria-label="Download the latest Break Tracker Android APK from GitHub Releases">
+              <svg class="android-logo" viewBox="0 0 24 24" role="img" aria-label="Android logo"><path d="M6 9.5a6 6 0 0 1 12 0v6.5H6V9.5Z"/><path d="M8.1 4.4 6.8 2.5M15.9 4.4l1.3-1.9"/><path d="M3.5 10v5M20.5 10v5M8.8 16v3M15.2 16v3"/><circle cx="9.3" cy="9.4" r=".65" fill="currentColor" stroke="none"/><circle cx="14.7" cy="9.4" r=".65" fill="currentColor" stroke="none"/></svg>
+              Download for Android
+              <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13m-5-5 5 5 5-5M4 20h16"/></svg>
+            </a>
+            <a class="secondary" href="/">Use the Web App <span aria-hidden="true">↗</span></a>
+          </div>
+          <p class="fineprint">Android 8.0 or newer <span class="sep">·</span> APK test build <span class="sep">·</span> Hosted on GitHub Releases</p>
+        </div>
+        <div class="hero-art" aria-label="Illustration of the Break Tracker countdown and floating Picture-in-Picture timer">
+          <div class="halo"></div>
+          <div class="phone">
+            <div class="phone-screen">
+              <div class="island"></div>
+              <div class="mock-top"><span>Shift &amp; Break Tracker</span><small>⚙</small></div>
+              <div class="mock-card">
+                <div class="mock-label">Active Break Tracker <span class="mock-gear" style="float:right">▣</span></div>
+                <div class="mock-time"><strong>14:59</strong><span>Lunch (30m) · In progress</span></div>
+                <div class="mock-pills"><span></span><span></span><span></span></div>
+              </div>
+              <div class="mock-card">
+                <div class="mock-label">Shift Setup</div>
+                <div class="mock-muted" style="margin-top:15px"></div>
+                <div class="mock-muted short"></div>
+                <div class="mock-schedule"><span>1st break</span><span>Lunch</span><span>2nd break</span><span>Shift end</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="pip"><div class="pip-top"><span>◷ BREAK TRACKER</span><span aria-hidden="true">◈</span></div><div class="pip-time">12:45</div><div class="pip-label">Lunch · Time remaining</div><div class="pip-progress"><span></span></div></div>
+          <span class="preview-note">Illustrative preview</span>
+        </div>
+      </section>
+      <section aria-labelledby="features-title">
+        <div class="feature-head"><span class="kicker">Made for your shift</span><h2 id="features-title">Everything you need, without the clutter.</h2><p class="section-copy">From your first break to the end of your shift, keep the essentials one tap away.</p></div>
+        <div class="features">
+          <article class="feature"><div class="feature-icon" aria-hidden="true">▣</div><h3>Floating Picture-in-Picture</h3><p>Keep a compact countdown visible on your Android Home screen or over other apps during an active break.</p></article>
+          <article class="feature"><div class="feature-icon" aria-hidden="true">◉</div><h3>14 countdown designs</h3><p>Switch between Neon Pulse, Speedometer, Retro Flip, Clock Dial, Zen Garden, and more.</p></article>
+          <article class="feature"><div class="feature-icon" aria-hidden="true">◷</div><h3>Break and lunch timers</h3><p>Start a 15-minute break, 30-minute meal, or set a custom countdown for your schedule.</p></article>
+          <article class="feature"><div class="feature-icon" aria-hidden="true">↗</div><h3>MA / ZIP shift planner</h3><p>Set your shift and clock-in times, calculate break schedules, and keep MA / ZIP data cloud-synced.</p></article>
+          <article class="feature"><div class="feature-icon" aria-hidden="true">🚗</div><h3>Kitt break tracking</h3><p>Manage multiple Kitt numbers, planned break times, and completed breaks on your device.</p></article>
+          <article class="feature"><div class="feature-icon" aria-hidden="true">♬</div><h3>End-of-break reminders</h3><p>Receive a best-effort warning with around three minutes left when notifications are enabled.</p></article>
+        </div>
+      </section>
+      <section class="style-band" aria-labelledby="style-title">
+        <div><span class="kicker">Make it your own</span><h2 id="style-title">A timer with personality.</h2><p>Choose from 14 native PiP looks, including expressive neon, calming minimal designs, and motorsport-inspired gauges. Your selection is remembered.</p></div>
+        <div class="mini-styles" aria-label="Countdown style examples"><div class="mini one"><strong>12:45</strong><span>Neon</span></div><div class="mini two"><strong>12:45</strong><span>Aurora</span></div><div class="mini three"><strong>12:45</strong><span>Flip</span></div></div>
+      </section>
+      <section class="how-wrap" aria-labelledby="install-title">
+        <div><span class="kicker">Simple installation</span><h2 id="install-title">Get started in three steps.</h2><p>You don't need a computer. You can download the APK directly on your Samsung or other supported Android phone.</p></div>
+        <div class="steps">
+          <div class="step"><span class="number">01</span><div><h3>Download the APK</h3><p>Tap the Android download button above. GitHub may ask you to sign in because the source repository is private.</p></div></div>
+          <div class="step"><span class="number">02</span><div><h3>Install on your phone</h3><p>Open the downloaded <strong>Break-Tracker-Android.apk</strong> file. If prompted, allow installation from your browser or file manager.</p></div></div>
+          <div class="step"><span class="number">03</span><div><h3>Start a break and go Home</h3><p>Open the app, start a countdown, and press Home. Enable Picture-in-Picture access for Break Tracker in Android settings if needed.</p></div></div>
+        </div>
+      </section>
+      <aside class="disclaimer"><strong>Before installing:</strong> This is a testing APK distributed through GitHub, not the Google Play Store. Some Android security prompts are expected. If you have an older build, back up important Kitt records before uninstalling it; test builds may use different signing keys. The app loads the live website, so internet access is needed. If the direct download is unavailable, <a href="https://github.com/Jhamal96/Break-Tracker/releases/latest" rel="noopener" style="color:#8ff5d5;text-decoration:underline;text-underline-offset:3px">open the latest GitHub Release</a> and check its Assets.</aside>
+    </main>
+    <footer><span>© Break Tracker · Part of AJD Apps</span><span><a href="/">Open Tracker</a> &nbsp;·&nbsp; <a href="https://github.com/Jhamal96/Break-Tracker/releases/latest" rel="noopener">Latest Release</a></span></footer>
+  </div>
+</body>
+</html>
