@@ -254,6 +254,16 @@ public class MainActivity extends Activity {
     private int dp(float dp) { return Math.round(dp * getResources().getDisplayMetrics().density); }
 
     public final class Bridge {
+        @JavascriptInterface public void enterPiP() {
+            runOnUiThread(() -> {
+                if (endMs <= System.currentTimeMillis()) return;
+                if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)) {
+                    android.widget.Toast.makeText(MainActivity.this,"This device does not support Picture-in-Picture.",android.widget.Toast.LENGTH_LONG).show(); return;
+                }
+                try { enterPictureInPictureMode(buildPipParams()); }
+                catch (Exception e) { android.widget.Toast.makeText(MainActivity.this,"Enable Picture-in-Picture for Break Tracker in Android Settings.",android.widget.Toast.LENGTH_LONG).show(); }
+            });
+        }
         @JavascriptInterface public void openStylePicker() {
             runOnUiThread(() -> showStylePicker());
         }
@@ -425,3 +435,4 @@ public class MainActivity extends Activity {
         else super.onBackPressed();
     }
 }
+

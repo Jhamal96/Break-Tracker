@@ -318,26 +318,6 @@ function updateStyledPiP(w,seconds,totalSeconds,label){
   d.querySelectorAll('[data-pip-digit]').forEach(node=>node.textContent=digits[Number(node.dataset.pipDigit)]||'0');
   d.body.classList.toggle('pip-warning',active&&remain<=180);
 }
-async function openFloatingTimer(){
-  if(!window.documentPictureInPicture){
-    const p=document.getElementById('mobile-float');p.hidden=!p.hidden;drawMobileFloatingTimer();return;
-  }
-  try{
-    const w=await documentPictureInPicture.requestWindow({width:370,height:225});
-    createStyledPiP(w);
-    const draw=()=>{
-      if(w.closed)return;
-      const active=!!(targetEndTime&&targetEndTime.getTime()>Date.now());
-      const seconds=active?Math.ceil((targetEndTime.getTime()-Date.now())/1000):0;
-      const configuredMinutes=activeBreakKey==='lunch'?30:activeBreakKey==='custom'?Number((activeBreakName.match(/\((\d+)m\)/)||[])[1])||15:15;
-      updateStyledPiP(w,seconds,configuredMinutes*60,activeBreakName||'Active break');
-    };
-    draw();
-    const id=setInterval(()=>{if(w.closed)clearInterval(id);else draw()},1000);
-  }catch(e){
-    const p=document.getElementById('mobile-float');p.hidden=false;drawMobileFloatingTimer();
-  }
-}
   // Supabase Credentials
   const SUPABASE_URL = "https://vxpufrahrnwmtgltjstd.supabase.co";
   const SUPABASE_KEY = "sb_publishable_tRjMtsoo9aT-6n7dzj9p-w_HsUqJ520";
@@ -845,5 +825,93 @@ async function openFloatingTimer(){
     saveData();
   }
 </script>
-<style id="mobile-floating-style">.mobile-float{position:fixed;z-index:9998;bottom:max(16px,env(safe-area-inset-bottom));left:16px;right:16px;margin:0 auto;max-width:340px;background:var(--card-bg);color:var(--text);border:1px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:0 12px 40px #0004}.mobile-float[hidden]{display:none}.mobile-float-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.mobile-float-time{font-size:2.2rem;font-weight:800;color:var(--primary);font-variant-numeric:tabular-nums;text-align:center}.mobile-float-label{font-size:.85rem;color:var(--text-muted);text-align:center}.mobile-float button{padding:5px 10px}</style><aside id="mobile-float" class="mobile-float" hidden role="status" aria-live="off"><div class="mobile-float-head"><strong>Floating Timer</strong><button type="button" class="secondary" onclick="document.getElementById('mobile-float').hidden=true" aria-label="Close floating timer">✕</button></div><div class="mobile-float-time" id="mobile-float-time">00:00</div><div class="mobile-float-label" id="mobile-float-label">No active break</div></aside></body>
+<style id="mobile-floating-style">.mobile-float{position:fixed;z-index:9998;bottom:max(16px,env(safe-area-inset-bottom));left:16px;right:16px;margin:0 auto;max-width:340px;background:var(--card-bg);color:var(--text);border:1px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:0 12px 40px #0004}.mobile-float[hidden]{display:none}.mobile-float-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.mobile-float-time{font-size:2.2rem;font-weight:800;color:var(--primary);font-variant-numeric:tabular-nums;text-align:center}.mobile-float-label{font-size:.85rem;color:var(--text-muted);text-align:center}.mobile-float button{padding:5px 10px}</style><aside id="mobile-float" class="mobile-float" hidden role="status" aria-live="off"><div class="mobile-float-head"><strong>Floating Timer</strong><button type="button" class="secondary" onclick="document.getElementById('mobile-float').hidden=true" aria-label="Close floating timer">✕</button></div><div class="mobile-float-time" id="mobile-float-time">00:00</div><div class="mobile-float-label" id="mobile-float-label">No active break</div></aside><script>
+
+/* Video PiP uses a canvas stream, like a video player. No camera/microphone access. */
+function createBreakFloatingTimer(readState, button) {
+  let win=null, video=null, canvas=null, interval=null, busy=false;
+  const mini=document.getElementById('mobile-float');
+  const status=document.createElement('p');
+  status.setAttribute('role','status');status.style.cssText='font-size:12px;color:var(--text-muted);line-height:1.5;margin:8px 0';
+  button.closest('.card-header,header,.row')?.insertAdjacentElement('afterend',status);
+  const say=text=>{status.textContent=text};
+  const isVideo=()=>!!video&&(document.pictureInPictureElement===video||video.webkitPresentationMode==='picture-in-picture');
+  function syncButton(){button.setAttribute('aria-pressed',String(!!win||isVideo()||!mini.hidden));}
+  function release(){
+    if(interval){clearInterval(interval);interval=null;}
+    if(video){video.pause();video.srcObject?.getTracks().forEach(t=>t.stop());video.srcObject=null;video.remove();video=null;}
+    canvas=null;syncButton();
+  }
+  function draw(){
+    const state=readState();
+    const seconds=state.end?Math.max(0,Math.ceil((state.end-Date.now())/1000)):0;
+    const label=state.label||'No active break';
+    if(win&&!win.closed){
+      updateStyledPiP(win,seconds,state.total,label);
+      if(state.end&&seconds===0){win.document.querySelectorAll('[data-pip-label]').forEach(n=>n.textContent=label);win.document.querySelectorAll('[data-pip-status]').forEach(n=>n.textContent='Break finished · Back to work');}
+    }
+    if(!canvas)return;
+    const g=canvas.getContext('2d'),w=canvas.width,h=canvas.height;
+    g.fillStyle='#111827';g.fillRect(0,0,w,h);
+    g.textAlign='center';g.fillStyle='#a5b4fc';g.font='700 20px system-ui';g.fillText('BREAK TRACKER',w/2,42);
+    g.strokeStyle='#334155';g.lineWidth=13;g.beginPath();g.arc(w/2,151,82,0,2*Math.PI);g.stroke();
+    g.strokeStyle=seconds<=180?'#fbbf24':'#818cf8';g.beginPath();g.arc(w/2,151,82,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.max(0,Math.min(1,seconds/Math.max(1,state.total))));g.stroke();
+    g.fillStyle='#f8fafc';g.font='800 49px system-ui';g.fillText(String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0'),w/2,168);
+    g.font='600 19px system-ui';g.fillText(label,w/2,263,w-32);
+    g.fillStyle='#cbd5e1';g.font='16px system-ui';g.fillText(state.end?(seconds?'Return at '+new Date(state.end).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'Break finished · Back to work'):'Start a break to begin',w/2,294,w-32);
+  }
+  async function openVideo(){
+    if(!HTMLCanvasElement.prototype.captureStream)return false;
+    const probe=document.createElement('video');
+    if(!(document.pictureInPictureEnabled&&probe.requestPictureInPicture)&&!probe.webkitSetPresentationMode)return false;
+    canvas=document.createElement('canvas');canvas.width=560;canvas.height=315;
+    video=probe;video.muted=true;video.playsInline=true;video.autoplay=true;
+    video.setAttribute('aria-hidden','true');video.style.cssText='position:fixed;width:2px;height:2px;left:-4px;top:0;opacity:.01;pointer-events:none';
+    draw();video.srcObject=canvas.captureStream(5);document.body.appendChild(video);
+    interval=setInterval(draw,200);
+    await video.play();
+    if(document.pictureInPictureEnabled&&video.requestPictureInPicture)await video.requestPictureInPicture();
+    else if(video.webkitSupportsPresentationMode?.('picture-in-picture'))video.webkitSetPresentationMode('picture-in-picture');
+    else return false;
+    video.addEventListener('leavepictureinpicture',()=>{release();say('Floating timer closed. Your break continues.');},{once:true});
+    video.addEventListener('webkitpresentationmodechanged',()=>{if(video&&!isVideo())release()});
+    return isVideo();
+  }
+  return async function toggle(){
+    if(busy)return;busy=true;
+    try{
+      if(win&&!win.closed){win.close();return;}
+      if(isVideo()){
+        if(document.pictureInPictureElement===video)await document.exitPictureInPicture();
+        else video.webkitSetPresentationMode('inline');
+        return;
+      }
+      if(!mini.hidden){mini.hidden=true;return;}
+      const s=readState();
+      if(typeof window.AndroidBreakTracker?.enterPiP==='function'){
+        if(!s.end||s.end<=Date.now()){say('Start a break, then tap Float Timer.');return;}
+        window.AndroidBreakTracker.startBreak(s.label,s.end);
+        window.AndroidBreakTracker.enterPiP();say('Opening Android Picture-in-Picture.');return;
+      }
+      if(window.documentPictureInPicture?.requestWindow){
+        try{
+          win=await documentPictureInPicture.requestWindow({width:370,height:250});
+          createStyledPiP(win);draw();
+          interval=win.setInterval(draw,500);
+          win.addEventListener('pagehide',()=>{win=null;interval=null;syncButton();say('Floating timer closed. Your break continues.');},{once:true});
+          say('Picture-in-Picture is active. You can switch to another window.');return;
+        }catch(e){console.warn('Document PiP unavailable',e);win?.close();win=null;}
+      }
+      try{if(await openVideo()){say('Video Picture-in-Picture is active. Keep this page open.');return;}}catch(e){console.warn('Video PiP unavailable',e);}
+      release();mini.hidden=false;drawMobileFloatingTimer();
+      say('This browser could not open system PiP. This mini timer stays inside this page. On Android, try the APK; on desktop, try Chrome or Edge. iPhone/iPad video PiP varies by browser and device.');
+    }finally{busy=false;syncButton();}
+  };
+}
+
+const floatButton=document.querySelector('[onclick="openFloatingTimer()"]');
+window.openFloatingTimer=createBreakFloatingTimer(()=>({end:targetEndTime?.getTime()||0,label:activeBreakName,total:(activeBreakKey==='lunch'?30:Number((activeBreakName.match(/\((\d+)m\)/)||[])[1])||15)*60}),floatButton);
+floatButton.title='Float Timer (Picture-in-Picture)';floatButton.setAttribute('aria-label','Float Timer (Picture-in-Picture)');
+</script></body>
 </html>
+
