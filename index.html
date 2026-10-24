@@ -825,7 +825,7 @@ function updateStyledPiP(w,seconds,totalSeconds,label){
     saveData();
   }
 </script>
-<style id="mobile-floating-style">.mobile-float{position:fixed;z-index:9998;bottom:max(16px,env(safe-area-inset-bottom));left:16px;right:16px;margin:0 auto;max-width:340px;background:var(--card-bg);color:var(--text);border:1px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:0 12px 40px #0004}.mobile-float[hidden]{display:none}.mobile-float-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.mobile-float-time{font-size:2.2rem;font-weight:800;color:var(--primary);font-variant-numeric:tabular-nums;text-align:center}.mobile-float-label{font-size:.85rem;color:var(--text-muted);text-align:center}.mobile-float button{padding:5px 10px}</style><aside id="mobile-float" class="mobile-float" hidden role="status" aria-live="off"><div class="mobile-float-head"><strong>Floating Timer</strong><button type="button" class="secondary" onclick="document.getElementById('mobile-float').hidden=true" aria-label="Close floating timer">✕</button></div><div class="mobile-float-time" id="mobile-float-time">00:00</div><div class="mobile-float-label" id="mobile-float-label">No active break</div></aside><script>
+<style id="mobile-floating-style">.mobile-float{position:fixed;z-index:9998;bottom:max(16px,env(safe-area-inset-bottom));left:16px;right:16px;margin:0 auto;max-width:340px;background:var(--card-bg);color:var(--text);border:1px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:0 12px 40px #0004}.mobile-float[hidden]{display:none}.mobile-float-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.mobile-float-time{font-size:2.2rem;font-weight:800;color:var(--primary);font-variant-numeric:tabular-nums;text-align:center}.mobile-float-label{font-size:.85rem;color:var(--text-muted);text-align:center}.mobile-float button{padding:5px 10px}</style><aside id="mobile-float" class="mobile-float" hidden role="status" aria-live="off"><div class="mobile-float-head"><strong>In-app mini timer</strong><button type="button" class="secondary" onclick="document.getElementById('mobile-float').hidden=true" aria-label="Close floating timer">✕</button></div><div class="mobile-float-time" id="mobile-float-time">00:00</div><div class="mobile-float-label" id="mobile-float-label">No active break</div></aside><script>
 
 /* Video PiP uses a canvas stream, like a video player. No camera/microphone access. */
 function createBreakFloatingTimer(readState, button) {
@@ -904,7 +904,7 @@ function createBreakFloatingTimer(readState, button) {
       }
       try{if(await openVideo()){say('Video Picture-in-Picture is active. Keep this page open.');return;}}catch(e){console.warn('Video PiP unavailable',e);}
       release();mini.hidden=false;drawMobileFloatingTimer();
-      say('This browser could not open system PiP. This mini timer stays inside this page. On Android, try the APK; on desktop, try Chrome or Edge. iPhone/iPad video PiP varies by browser and device.');
+      say('This browser could not open system PiP. This mini timer stays inside this page. On Android, try the APK; on desktop, try Chrome or Edge. On iPhone/iPad, this in-app mini timer cannot stay above other apps; that requires a separately installed native Apple app.');
     }finally{busy=false;syncButton();}
   };
 }
