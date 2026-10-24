@@ -833,7 +833,7 @@ function createBreakFloatingTimer(readState, button) {
   const mini=document.getElementById('mobile-float');
   const status=document.createElement('p');
   status.setAttribute('role','status');status.style.cssText='font-size:12px;color:var(--text-muted);line-height:1.5;margin:8px 0';
-  button.closest('.card-header,header,.row')?.insertAdjacentElement('afterend',status);
+  (button.closest('.card-header,header,.row')||button).insertAdjacentElement('afterend',status);
   const say=text=>{status.textContent=text};
   const isVideo=()=>!!video&&(document.pictureInPictureElement===video||video.webkitPresentationMode==='picture-in-picture');
   function syncButton(){button.setAttribute('aria-pressed',String(!!win||isVideo()||!mini.hidden));}
