@@ -140,6 +140,9 @@
 body{padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(18px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));-webkit-text-size-adjust:100%}
 .container,main{width:100%;min-width:0;gap:12px}header,.card{padding:16px;box-shadow:none;border-radius:14px}header{gap:8px}h1{font-size:1.1rem;letter-spacing:-.02em}.card-header{gap:10px}.card-title{font-size:.95rem}.settings-wrap{position:relative;margin-left:auto}.settings-trigger{width:40px;height:40px;display:grid;place-items:center;font-size:1.25rem;padding:0}.settings-panel{position:absolute;right:0;top:calc(100% + 8px);width:min(280px,calc(100vw - 32px));z-index:20;background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:14px;box-shadow:0 12px 32px #0002;display:flex;flex-direction:column;gap:12px}.settings-panel[hidden]{display:none!important}.settings-panel .setting-line{display:flex;align-items:center;justify-content:space-between;gap:10px}.settings-panel select{max-width:150px}.settings-panel button{width:100%}.tracker-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.tracker-heading button{font-size:.75rem;white-space:nowrap;padding:8px 10px}.grid-2>*{min-width:0}.schedule-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.schedule-item{min-width:0}.schedule-item input{min-width:0;max-width:100%}.btn-group button{min-width:0;padding:10px 4px;font-size:.76rem}.custom-break{min-width:0}.custom-break input{min-width:0}.custom-break input[type=number]{flex:0 0 66px!important;width:66px!important}.tab-bar{min-width:0}.tab-btn{min-width:0;font-size:.77rem;padding:10px 6px}nav a{min-width:0;font-size:.8rem}input,select,button{max-width:100%}input[type=time],input[type=number],input[type=text]{font-size:16px}@media(max-width:390px){header,.card{padding:13px}.timer-time{font-size:2.2rem}.schedule-grid{gap:8px}.grid-2{gap:8px}.tracker-heading button{font-size:.7rem}.btn-group{gap:5px}}
   .floating-icon-btn{display:inline-flex;align-items:center;justify-content:center;width:38px;height:36px;flex:0 0 auto;padding:7px!important}.floating-icon-btn svg{display:block;pointer-events:none}
+
+/* True near-black mode. System mode retains the browser's automatic media-query logic. */
+[data-theme="ultra-dark"]{color-scheme:dark;--bg:#000000;--card-bg:#0b0b0d;--text:#f5f5f6;--text-muted:#a3a3aa;--primary:#9895ff;--primary-hover:#7875ed;--border:#29292c;--input-bg:#101013;--shadow:0 8px 28px rgba(0,0,0,.5)}
 </style>
 </head>
 <body>
@@ -151,6 +154,7 @@ body{padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-rig
         <option value="auto">💻 System</option>
         <option value="light">☀️ Light</option>
         <option value="dark">🌙 Dark</option>
+<option value="ultra-dark">⬛ Ultra Dark</option>
       </select></div><div class="setting-line"><div class="toggle-container">
         <span>Notify</span>
         <label class="switch">
