@@ -1,7 +1,7 @@
 {
   "name": "ajd-break-tracker-desktop",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Break Tracker desktop app — AJD Apps",
   "main": "main.cjs",
   "scripts": {
@@ -22,6 +22,9 @@
     "files": [
       "main.cjs",
       "preload.cjs",
+      "pip-preload.cjs",
+      "native-pip-hook.js",
+      "pip.html",
       "intro.html",
       "icon.png"
     ],
@@ -55,7 +58,8 @@
         }
       ],
       "category": "public.app-category.productivity",
-      "artifactName": "Break-Tracker-macOS.dmg"
+      "artifactName": "Break-Tracker-macOS.dmg",
+      "minimumSystemVersion": "12.0.0"
     },
     "icon": "icon.png",
     "dmg": {
