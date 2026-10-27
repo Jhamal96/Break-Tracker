@@ -1,0 +1,8 @@
+# Keep repository and build files out of the public website.
+.git/**
+.wrangler/**
+.github/**
+android/**
+desktop/**
+*.md
+.assetsignore
