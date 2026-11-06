@@ -11,7 +11,7 @@ body{padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-rig
   if (window.__ajdAppearanceV2) return;
   window.__ajdAppearanceV2 = true;
   const app = "break";
-  const surfaces = ".container > header,main > header,.settings-panel,nav.card,.mini-float";
+  const surfaces = ".container > header, .container > .card, .container > main > .card, main > header, .settings-panel, nav.card, .mini-float";
   const storageKey = 'ajd_glass_appearance_v2';
   const root = document.documentElement;
   const nativeModes = {
@@ -67,9 +67,9 @@ body{padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-rig
     root.classList.toggle('ajd-glass-on', state.enabled);
     root.classList.toggle('ajd-amoled', state.amoled);
     root.classList.toggle('ajd-glass-light', currentIsLight());
-    root.style.setProperty('--ajd-glass-alpha', String((0.58 + state.level * .0038).toFixed(3)));
-    root.style.setProperty('--ajd-glass-light-alpha', String((0.70 + state.level * .0026).toFixed(3)));
-    root.style.setProperty('--ajd-glass-blur', (14 + state.level * .10).toFixed(1) + 'px');
+    root.style.setProperty('--ajd-glass-alpha', String((0.025 + state.level * .0047).toFixed(3)));
+    root.style.setProperty('--ajd-glass-light-alpha', String((0.035 + state.level * .0046).toFixed(3)));
+    root.style.setProperty('--ajd-glass-blur', (state.level * .065).toFixed(1) + 'px');
     const summary = document.getElementById('ajdAppearanceSummary');
     if (summary) summary.textContent = 'Glass ' + (state.enabled ? 'on' : 'off') + ' · AMOLED ' + (state.amoled ? 'on' : 'off');
     if (!dialog) return;
@@ -130,14 +130,23 @@ body{padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-rig
     }
     html.ajd-amoled.ajd-amoled body {background:#000!important;color:#f4f5f8}
     html.ajd-glass-on :is(${surfaces}) {
-      background-color:rgba(19,29,43,.96)!important;
+      background-color:rgba(19,29,43,.10)!important;
       background-image:linear-gradient(140deg,rgba(255,255,255,.09),rgba(255,255,255,0) 48%)!important;
       box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 10px 28px rgba(0,0,0,.18)!important;
     }
     html.ajd-glass-on.ajd-glass-light :is(${surfaces}) {
-      background-color:rgba(255,255,255,.97)!important;
+      background-color:rgba(255,255,255,.12)!important;
       background-image:linear-gradient(140deg,rgba(255,255,255,.3),rgba(255,255,255,0) 55%)!important;
       box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 10px 28px rgba(32,42,60,.10)!important;
+    }
+    /* Add a subtle backdrop so truly clear glass is visibly see-through. */
+    html.ajd-glass-on:not(.ajd-amoled) body {
+      background-image:radial-gradient(ellipse at 12% 15%,rgba(111,154,243,.20),transparent 46%),
+        radial-gradient(ellipse at 86% 66%,rgba(55,198,177,.16),transparent 48%)!important;
+      background-attachment:fixed!important;
+    }
+    html.ajd-glass-on :is(${surfaces}) {
+      border:1px solid rgba(169,191,229,.28)!important;
     }
     @supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
       html.ajd-glass-on :is(${surfaces}) {
@@ -201,7 +210,7 @@ body{padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-rig
       <div class="ajd-appearance-head"><div><h2 id="ajdAppearanceTitle">Liquid Glass</h2><p>Make the look your own.</p></div><button class="ajd-close" type="button" aria-label="Close appearance settings">×</button></div>
       <div class="ajd-appearance-row"><span><strong>Liquid Glass</strong><small>Translucent navigation and controls</small></span><label class="ajd-appearance-switch"><input id="ajdGlassEnabled" type="checkbox" role="switch" aria-label="Enable Liquid Glass"><span class="ajd-appearance-track" aria-hidden="true"></span></label></div>
       <div class="ajd-glass-demo" id="ajdGlassDemo" aria-label="Live Liquid Glass preview"><div class="ajd-glass-demo-scroll" tabindex="0" aria-label="Scroll preview content"><div class="ajd-glass-demo-art">Your apps, your style.</div><div class="ajd-glass-demo-copy">Scroll this preview to see the controls float over the content.</div></div><div class="ajd-glass-demo-bar" aria-hidden="true">☰ &nbsp; ⌕ &nbsp; Search</div></div>
-      <div><div class="ajd-appearance-range-head"><label for="ajdGlassTint">Glass tint</label><output id="ajdGlassLevel" for="ajdGlassTint">50% tint</output></div><input type="range" id="ajdGlassTint" min="0" max="100" step="1" value="50" aria-describedby="ajdGlassDescription"><div class="ajd-appearance-range-ends"><span>Clear</span><span>Tinted</span></div><p class="ajd-appearance-help" id="ajdGlassDescription">Clear is more transparent; tinted adds opacity and contrast.</p></div>
+      <div><div class="ajd-appearance-range-head"><label for="ajdGlassTint">Glass tint</label><output id="ajdGlassLevel" for="ajdGlassTint">50% tint</output></div><input type="range" id="ajdGlassTint" min="0" max="100" step="1" value="50" aria-describedby="ajdGlassDescription"><div class="ajd-appearance-range-ends"><span>Clear</span><span>Tinted</span></div><p class="ajd-appearance-help" id="ajdGlassDescription">Clear is nearly see-through with very little blur. Slide right for more tint and contrast.</p></div>
       <div class="ajd-appearance-row"><span><strong>AMOLED black</strong><small>Use a true black background</small></span><label class="ajd-appearance-switch"><input id="ajdAmoledEnabled" type="checkbox" role="switch" aria-label="Enable AMOLED black"><span class="ajd-appearance-track" aria-hidden="true"></span></label></div>
       <p class="ajd-appearance-status" id="ajdAppearanceSaveStatus" role="status"></p>
     </div>`;
