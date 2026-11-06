@@ -455,6 +455,22 @@ html.ajd-opening-enabled .ajd-opening{position:fixed;inset:0;z-index:2147483647;
 })();
 </script>
 
+<style>
+.time-backtrack{margin:1rem 0;padding:1rem;border:1px solid var(--border);background:var(--item-bg);border-radius:var(--radius)}
+.time-backtrack-heading strong{font-size:1rem}
+.time-backtrack-heading p{font-size:.85rem;color:var(--text-muted);margin:.2rem 0 .9rem}
+.time-backtrack-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem}
+.time-backtrack-grid .form-group{min-width:0}
+.time-backtrack-grid input{width:100%;min-width:0}
+.time-backtrack-actions{display:flex;gap:.5rem;margin:.7rem 0}
+.time-backtrack-actions button{flex:1;min-width:0}
+.time-backtrack-result{padding:.7rem .85rem;border:1px solid var(--highlight-border);border-radius:10px;background:var(--highlight-bg);display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+.time-backtrack-result span{color:var(--text-muted);font-size:.82rem}
+.time-backtrack-result strong{font-size:1.35rem;color:var(--primary);font-variant-numeric:tabular-nums}
+.time-backtrack-result small{color:var(--text-muted)}
+.time-backtrack-apply{width:100%;margin-top:.65rem}
+@media(max-width:440px){.time-backtrack-grid{grid-template-columns:1fr}.time-backtrack-actions{flex-direction:column}}
+</style>
 </head>
 <body>
 <div class="ajd-opening" aria-hidden="true"><div class="ajd-opening-inner">
@@ -542,6 +558,25 @@ html.ajd-opening-enabled .ajd-opening{position:fixed;inset:0;z-index:2147483647;
       <button class="secondary sm" style="width: 100%;" onclick="syncOfficialWithShift()">Sync Official with Shift Start</button>
       <button class="secondary sm" style="width: 100%;" onclick="setCurrentAsOfficial()">Clock In Now (Current Time)</button>
     </div>
+
+    <section class="time-backtrack" aria-labelledby="time-backtrack-title">
+      <div class="time-backtrack-heading">
+        <div><strong id="time-backtrack-title">Time Calculator</strong><p>Find an earlier time by subtracting minutes.</p></div>
+      </div>
+      <div class="time-backtrack-grid">
+        <div class="form-group"><label for="backtrack-base">Starting Time</label><input type="time" id="backtrack-base"></div>
+        <div class="form-group"><label for="backtrack-minutes">Minutes to Subtract</label><input type="number" id="backtrack-minutes" min="0" max="10080" step="1" value="15" inputmode="numeric"></div>
+      </div>
+      <div class="time-backtrack-actions">
+        <button type="button" class="secondary sm" onclick="backtrackUseNow()">Use Current Time</button>
+        <button type="button" class="sm" onclick="backtrackCalculate()">Calculate Previous Time</button>
+      </div>
+      <div class="time-backtrack-result" aria-live="polite">
+        <span>Previous Time</span><strong id="backtrack-result">—</strong>
+        <small id="backtrack-day"></small>
+      </div>
+      <button type="button" class="secondary sm time-backtrack-apply" id="backtrack-apply" onclick="backtrackApplyOfficial()" disabled>Use Result as Official Clock-in</button>
+    </section>
 
     <div class="schedule-grid">
       <!-- 1st Break -->
@@ -772,6 +807,57 @@ function updateStyledPiP(w,seconds,totalSeconds,label){
     calculateSchedule();
     saveData();
   }
+
+  // This calculator is deliberately independent of shift state/cloud storage.
+  // Only the explicit Apply action changes the official clock-in time.
+  let backtrackCalculatedValue = null;
+  function backtrackUseNow() {
+    const now = new Date();
+    document.getElementById('backtrack-base').value =
+      String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+    backtrackCalculate();
+  }
+  function backtrackCalculate() {
+    const input = document.getElementById('backtrack-base').value;
+    const minutes = Number(document.getElementById('backtrack-minutes').value);
+    const result = document.getElementById('backtrack-result');
+    const note = document.getElementById('backtrack-day');
+    const apply = document.getElementById('backtrack-apply');
+    backtrackCalculatedValue = null;
+    apply.disabled = true;
+    if (!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(input) ||
+        !Number.isInteger(minutes) || minutes < 0 || minutes > 10080) {
+      result.textContent = '—';
+      note.textContent = 'Enter a valid time and 0–10,080 whole minutes.';
+      return;
+    }
+    const [hours, mins] = input.split(':').map(Number);
+    const originalMinutes = hours * 60 + mins;
+    const delta = originalMinutes - minutes;
+    const dayOffset = Math.floor(delta / 1440);
+    const clockMinutes = ((delta % 1440) + 1440) % 1440;
+    const previousHour = Math.floor(clockMinutes / 60);
+    const previousMinute = clockMinutes % 60;
+    backtrackCalculatedValue = String(previousHour).padStart(2, '0') + ':' +
+      String(previousMinute).padStart(2, '0');
+    const displayHour = previousHour % 12 || 12;
+    result.textContent = displayHour + ':' + String(previousMinute).padStart(2, '0') +
+      (previousHour < 12 ? ' AM' : ' PM');
+    note.textContent = dayOffset === 0 ? 'Same day' :
+      (dayOffset === -1 ? 'Previous day' : dayOffset < 0 ? Math.abs(dayOffset) + ' days earlier' :
+       dayOffset === 1 ? 'Next day' : dayOffset + ' days later');
+    apply.disabled = false;
+  }
+  function backtrackApplyOfficial() {
+    if (!backtrackCalculatedValue) return;
+    officialStartInput.value = backtrackCalculatedValue;
+    if (currentMission === 'ZIP') populateZipDefaults();
+    calculateSchedule();
+    saveData();
+  }
+  document.getElementById('backtrack-base').addEventListener('input', backtrackCalculate);
+  document.getElementById('backtrack-minutes').addEventListener('input', backtrackCalculate);
+  backtrackUseNow();
 
   function calculateSchedule() {
     const shiftVal = shiftStartInput.value;
