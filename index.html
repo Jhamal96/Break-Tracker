@@ -551,7 +551,15 @@ html[data-theme="light"] .tracker-menu a:hover,html[data-theme="light"] .tracker
 .time-calculator-dropdown[open]>summary:after{transform:rotate(180deg)}
 .time-calculator-dropdown .time-backtrack{margin:0 12px 12px}
 </style>
-</head>
+<style>
+/* Keep navigation immediately left of the settings gear on all screen sizes. */
+.header-actions{display:flex;align-items:center;justify-content:flex-end;gap:9px;flex:0 0 auto;min-width:0}
+.header-actions .tracker-menu-wrap{margin:0!important;display:flex;align-items:center;position:relative;z-index:35}
+.header-actions .tracker-menu-trigger,.header-actions .settings-trigger{width:44px!important;height:44px!important;min-width:44px!important;padding:9px!important;display:inline-flex;align-items:center;justify-content:center}
+.header-actions .tracker-menu{top:calc(100% + 9px)!important;right:0!important}
+.container > header.settings-open,.container > header:has(.tracker-menu:not([hidden])),main > header.settings-open,main > header:has(.tracker-menu:not([hidden])){position:relative;z-index:1000!important;overflow:visible!important}
+@media(max-width:440px){.header-actions{gap:7px}.header-actions .tracker-menu-trigger,.header-actions .settings-trigger{width:42px!important;height:42px!important;min-width:42px!important}}
+</style></head>
 <body>
 <div class="ajd-opening" aria-hidden="true"><div class="ajd-opening-inner">
   <div class="ajd-opening-art"><div class="ajd-opening-mark"><span class="ajd-opening-fallback">B</span><img src="/icon.svg" alt="" onerror="this.style.display='none'"></div></div>
@@ -564,7 +572,16 @@ html[data-theme="light"] .tracker-menu a:hover,html[data-theme="light"] .tracker
 <div class="container">
   <header>
     <h1>Shift & Break Tracker</h1>
-    <div class="settings-wrap"><button class="secondary settings-trigger" id="settings-trigger" type="button" aria-label="Settings" aria-expanded="false" aria-controls="settings-panel" onclick="toggleSettings()">⚙</button><div class="settings-panel" id="settings-panel" hidden><strong>Settings</strong><button class="secondary" onclick="manualRefresh()">↻ Refresh & Sync</button><div class="setting-line"><label for="theme-select">Appearance</label><select id="theme-select" class="theme-select" onchange="changeTheme(this.value)">
+    <div class="header-actions"><div class="tracker-menu-wrap">
+  <button type="button" id="tracker-menu-trigger" class="secondary tracker-menu-trigger" aria-label="Open tracker navigation" aria-controls="tracker-menu" aria-expanded="false" onclick="toggleTrackerMenu()" title="Navigation menu">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+  </button>
+  <nav id="tracker-menu" class="tracker-menu" aria-label="Tracker pages" hidden>
+    <a href="./index.html" aria-current="page">🚘 MA / ZIP Tracker</a>
+    <a href="./kitt.html">🚗 Kitt Break Tracker</a>
+    <a href="/download">↓ Android App</a>
+  </nav>
+</div><div class="settings-wrap"><button class="secondary settings-trigger" id="settings-trigger" type="button" aria-label="Settings" aria-expanded="false" aria-controls="settings-panel" onclick="toggleSettings()">⚙</button><div class="settings-panel" id="settings-panel" hidden><strong>Settings</strong><button class="secondary" onclick="manualRefresh()">↻ Refresh & Sync</button><div class="setting-line"><label for="theme-select">Appearance</label><select id="theme-select" class="theme-select" onchange="changeTheme(this.value)">
         <option value="auto">💻 System</option>
         <option value="light">☀️ Light</option>
         <option value="dark">🌙 Dark</option>
@@ -575,19 +592,10 @@ html[data-theme="light"] .tracker-menu a:hover,html[data-theme="light"] .tracker
           <input type="checkbox" id="notify-toggle">
           <span class="slider"></span>
         </label>
-      </div></div><button class="secondary" id="install-app">Install App</button></div></div>
+      </div></div><button class="secondary" id="install-app">Install App</button></div></div></div>
   </header>
 
-  <div class="tracker-menu-wrap">
-  <button type="button" id="tracker-menu-trigger" class="secondary tracker-menu-trigger" aria-label="Open tracker navigation" aria-controls="tracker-menu" aria-expanded="false" onclick="toggleTrackerMenu()" title="Navigation menu">
-    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-  </button>
-  <nav id="tracker-menu" class="tracker-menu" aria-label="Tracker pages" hidden>
-    <a href="./index.html" aria-current="page">🚘 MA / ZIP Tracker</a>
-    <a href="./kitt.html">🚗 Kitt Break Tracker</a>
-    <a href="/download">↓ Android App</a>
-  </nav>
-</div>
+  
   <!-- Active Break Tracker Card -->
   <div class="card">
     <div class="card-header tracker-heading">
