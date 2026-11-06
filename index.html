@@ -470,6 +470,35 @@ html.ajd-opening-enabled .ajd-opening{position:fixed;inset:0;z-index:2147483647;
 .time-backtrack-result small{color:var(--text-muted)}
 .time-backtrack-apply{width:100%;margin-top:.65rem}
 @media(max-width:440px){.time-backtrack-grid{grid-template-columns:1fr}.time-backtrack-actions{flex-direction:column}}
+
+/* iPhone Safari: native time pickers have an intrinsic width that can overflow
+   two-column grids. Keep all three shift/calculator time inputs in their cards. */
+.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid-2>.form-group,.time-backtrack-grid>.form-group{min-width:0;max-width:100%}
+#shift-start,#official-start,#backtrack-base{
+  display:block;width:100%;max-width:100%;min-width:0;
+  box-sizing:border-box;-webkit-appearance:none;appearance:none;
+  font-variant-numeric:tabular-nums;
+}
+@supports (-webkit-touch-callout:none){
+  #shift-start,#official-start,#backtrack-base{
+    font-size:16px;min-height:48px;padding:9px 6px;
+    text-align:center;text-align-last:center;
+  }
+  #shift-start::-webkit-date-and-time-value,
+  #official-start::-webkit-date-and-time-value,
+  #backtrack-base::-webkit-date-and-time-value{
+    min-height:1.25em;text-align:center;
+  }
+  #shift-start::-webkit-datetime-edit,
+  #official-start::-webkit-datetime-edit,
+  #backtrack-base::-webkit-datetime-edit{
+    padding:0;min-width:0;
+  }
+}
+@media(max-width:380px){
+  .grid-2{grid-template-columns:minmax(0,1fr)}
+}
 </style>
 </head>
 <body>
