@@ -825,7 +825,7 @@ function updateStyledPiP(w,seconds,totalSeconds,label){
     const apply = document.getElementById('backtrack-apply');
     backtrackCalculatedValue = null;
     apply.disabled = true;
-    if (!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(input) ||
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(input) ||
         !Number.isInteger(minutes) || minutes < 0 || minutes > 10080) {
       result.textContent = '—';
       note.textContent = 'Enter a valid time and 0–10,080 whole minutes.';
