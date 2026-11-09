@@ -55,6 +55,7 @@ public class MainActivity extends Activity {
     private static final String PREF_END = "break_end";
     private static final String PREF_LABEL = "break_label";
     private static final String PREF_DURATION = "break_duration";
+    private static final String PREF_NOTIFY_ENABLED = "notifications_enabled";
     private static final String ACTION_CHANGE_STYLE = "com.jhamal.breaktracker.CHANGE_PIP_STYLE";
     private static WeakReference<MainActivity> visibleActivity = new WeakReference<>(null);
 
@@ -93,6 +94,7 @@ public class MainActivity extends Activity {
                 sendWarning();
             }
             if (endMs > 0 && remaining <= 0L) {
+                // The scheduled system alarm sends completion even if WebView is suspended.
                 endMs = 0L;
                 breakName = "";
                 getSharedPreferences(PREFS, MODE_PRIVATE).edit().remove(PREF_END)
@@ -148,11 +150,9 @@ public class MainActivity extends Activity {
         NotificationManager notifications = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         notifications.createNotificationChannel(
             new NotificationChannel(CHANNEL_ID, "Break reminders", NotificationManager.IMPORTANCE_HIGH));
-        if (Build.VERSION.SDK_INT >= 33 &&
-            checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[] {"android.permission.POST_NOTIFICATIONS"}, 1);
-        }
-
+        // Notification permission is requested by the user through the Settings toggle.
+        // Re-arm persisted reminders after the app process restarts.
+        if (endMs > System.currentTimeMillis()) BreakAlarmReceiver.schedule(this, endMs);
         web.loadUrl(URL);
         startLegacyKittMigration(root);
         updatePipParams();
@@ -290,12 +290,29 @@ public class MainActivity extends Activity {
                     .putLong(PREF_END, endMs)
                     .putLong(PREF_DURATION, durationMs)
                     .putString(PREF_LABEL, breakName).apply();
+                BreakAlarmReceiver.schedule(MainActivity.this, endMs);
                 updatePipParams();
+            });
+        }
+        @JavascriptInterface public void sendNotification(String title, String body) {
+            runOnUiThread(() -> BreakAlarmReceiver.send(MainActivity.this,
+                title == null ? "Break Tracker" : title.substring(0, Math.min(80, title.length())),
+                body == null ? "" : body.substring(0, Math.min(180, body.length())), 304));
+        }
+        @JavascriptInterface public void setNotificationsEnabled(boolean enabled) {
+            runOnUiThread(() -> {
+                getSharedPreferences(PREFS, MODE_PRIVATE).edit()
+                    .putBoolean(PREF_NOTIFY_ENABLED, enabled).apply();
+                if (enabled) {
+                    requestNotificationPermissionIfNeeded();
+                    if (endMs > System.currentTimeMillis()) BreakAlarmReceiver.schedule(MainActivity.this, endMs);
+                } else BreakAlarmReceiver.cancel(MainActivity.this);
             });
         }
         @JavascriptInterface public void stopBreak() {
             runOnUiThread(() -> {
                 endMs = 0L; breakName = ""; warned = false;
+                BreakAlarmReceiver.cancel(MainActivity.this);
                 getSharedPreferences(PREFS, MODE_PRIVATE).edit()
                     .remove(PREF_END).remove(PREF_LABEL).apply();
                 updatePipParams();
@@ -389,14 +406,19 @@ public class MainActivity extends Activity {
         try { setPictureInPictureParams(buildPipParams()); } catch (Exception ignored) {}
     }
 
+    private void requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[] {"android.permission.POST_NOTIFICATIONS"}, 41);
+        }
+    }
+
     private void sendWarning() {
-        Notification notification = new Notification.Builder(this, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle("Break almost over")
-            .setContentText(breakName + " ends in about 3 minutes")
-            .setAutoCancel(true)
-            .build();
-        ((NotificationManager) getSystemService(NOTIFICATION_SERVICE)).notify(301, notification);
+        // In-app fallback for short breaks already within the three-minute window.
+        // The scheduled native receiver handles normal background reminders.
+        if (getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(PREF_NOTIFY_ENABLED, true))
+            BreakAlarmReceiver.send(this, "Break almost over",
+                breakName + " ends in about 3 minutes", 301);
     }
 
     @Override public void onUserLeaveHint() {
