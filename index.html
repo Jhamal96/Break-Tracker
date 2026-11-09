@@ -592,7 +592,7 @@ html[data-theme="light"] .tracker-menu a:hover,html[data-theme="light"] .tracker
           <input type="checkbox" id="notify-toggle">
           <span class="slider"></span>
         </label>
-      </div></div><button class="secondary" id="install-app">Install App</button></div></div></div>
+      </div></div><button type="button" class="secondary" id="break-test-notification" onclick="testBreakNotification()">🔔 Test Notification</button><p id="break-notification-feedback" role="status" style="font-size:.78rem;color:var(--text-muted);line-height:1.4"></p><button class="secondary" id="install-app">Install App</button></div></div></div>
   </header>
 
   
@@ -889,7 +889,8 @@ function updateStyledPiP(w,seconds,totalSeconds,label){
 
   shiftStartInput.addEventListener('change', () => { calculateSchedule(); saveData(); });
   officialStartInput.addEventListener('change', () => { calculateSchedule(); saveData(); });
-  notifyToggle.addEventListener('change', () => { saveData(); });
+  // Permission is resolved before the preference is saved; WebView uses native alerts.
+  notifyToggle.addEventListener('change', () => { /* handled by configureBreakNotifications below */ });
 
   zipB1Input.addEventListener('change', () => saveData());
   zipLunchInput.addEventListener('change', () => saveData());
@@ -1166,25 +1167,79 @@ function updateStyledPiP(w,seconds,totalSeconds,label){
     setTimeout(() => saveIndicator.classList.remove('active'), 1800);
   }
 
-  notifyToggle.addEventListener('change', async () => {
-    if (notifyToggle.checked) {
-      if (!("Notification" in window)) {
-        alert("This browser does not support desktop notifications.");
-        notifyToggle.checked = false;
-        return;
-      }
-      const permission = await Notification.requestPermission();
-      if (permission !== "granted") {
-        alert("Notification permission denied.");
-        notifyToggle.checked = false;
-      }
+  function notificationFeedback(message) {
+    const el=document.getElementById('break-notification-feedback');
+    if(el) el.textContent=message;
+  }
+
+  async function showBreakNotification(title, body, tag='break-tracker') {
+    if (!notifyToggle.checked) return false;
+    if (window.AndroidBreakTracker?.sendNotification) {
+      window.AndroidBreakTracker.sendNotification(title, body);
+      return true;
     }
-  });
+    if (!('Notification' in window) || Notification.permission!=='granted') return false;
+    try {
+      if ('serviceWorker' in navigator) {
+        const registration=await navigator.serviceWorker.ready;
+        await registration.showNotification(title,{body,icon:'/icon.svg',badge:'/icon.svg',tag});
+      } else {
+        new Notification(title,{body,tag});
+      }
+      return true;
+    } catch(e) {
+      console.warn('Unable to display break notification',e);
+      notificationFeedback('Notification failed. Check notification permissions in your device settings.');
+      return false;
+    }
+  }
+
+  async function configureBreakNotifications() {
+    if (!notifyToggle.checked) {
+      window.AndroidBreakTracker?.setNotificationsEnabled?.(false);
+      notificationFeedback('Break notifications turned off.');
+      saveData();
+      return;
+    }
+    if (window.AndroidBreakTracker?.setNotificationsEnabled) {
+      window.AndroidBreakTracker.setNotificationsEnabled(true);
+      notificationFeedback('Android alerts enabled. Allow notifications when prompted by your phone.');
+      saveData();
+      return;
+    }
+    if (!('Notification' in window)) {
+      notifyToggle.checked=false;
+      notificationFeedback('System notifications are not supported here. On iPhone, install the website to your Home Screen and enable notifications in iOS Settings.');
+      saveData();return;
+    }
+    try {
+      const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
+      if(permission!=='granted'){
+        notifyToggle.checked=false;
+        notificationFeedback(permission==='denied'?'Notifications blocked in device/browser settings.':'Notification permission was not granted.');
+      } else {
+        notificationFeedback('Notifications enabled! Use Test Notification to verify.');
+      }
+    } catch(e) {
+      notifyToggle.checked=false;
+      notificationFeedback('Unable to request notifications in this browser.');
+    }
+    saveData();
+  }
+
+  notifyToggle.addEventListener('change',configureBreakNotifications);
+
+  async function testBreakNotification() {
+    if (!notifyToggle.checked) {
+      notificationFeedback('Turn on Notify first, then use Test Notification.');
+      return;
+    }
+    const delivered=await showBreakNotification('Break Tracker test','Notifications are connected on this device.','break-tracker-test');
+    notificationFeedback(delivered?'Test sent. Check your notification shade or lock screen.':'Test could not be sent. Check permissions and try again.');
+  }
 
   function sendNotification(title, body) {
-    if (notifyToggle.checked && Notification.permission === "granted") {
-      if(navigator.serviceWorker?.controller){navigator.serviceWorker.ready.then(r=>r.showNotification(title,{body,icon:'./icon.svg',tag:'shift-break'})).catch(()=>new Notification(title,{body}));}else{new Notification(title,{body});}
-    }
+    showBreakNotification(title,body,'break-tracker-finished');
     playChime();
   }
 
@@ -1263,9 +1318,17 @@ function updateStyledPiP(w,seconds,totalSeconds,label){
     
     if (shouldSave) saveData();
 
+    // Once per break, including after a background tab resumes.
+    let warnedEndTimestamp=0;
     function update() {
       const now = new Date();
       const diff = targetEndTime - now;
+      const currentEnd=targetEndTime?.getTime()||0;
+      if(diff>0&&diff<=180000&&warnedEndTimestamp!==currentEnd){
+        warnedEndTimestamp=currentEnd;
+        if(!window.AndroidBreakTracker?.sendNotification)
+          showBreakNotification('Break almost over',activeBreakName+' ends in about 3 minutes.','break-tracker-warning-'+currentEnd);
+      }
 
       if (diff <= 0) {
         clearInterval(timerInterval);
