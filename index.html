@@ -1175,6 +1175,7 @@ function updateStyledPiP(w,seconds,totalSeconds,label){
   async function showBreakNotification(title, body, tag='break-tracker') {
     if (!notifyToggle.checked) return false;
     if (window.AndroidBreakTracker?.sendNotification) {
+      if (window.AndroidBreakTracker.notificationsReady && !window.AndroidBreakTracker.notificationsReady()) return false;
       window.AndroidBreakTracker.sendNotification(title, body);
       return true;
     }
