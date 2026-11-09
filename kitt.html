@@ -359,6 +359,7 @@ function updateLivePopup(){const box=document.getElementById('live-popup');const
 
 async function kittShowNotification(title,body,tag){
   if(window.AndroidBreakTracker?.sendNotification){
+    if(window.AndroidBreakTracker.notificationsReady&&!window.AndroidBreakTracker.notificationsReady())return false;
     window.AndroidBreakTracker.sendNotification(title,body);
     return true;
   }
