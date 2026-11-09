@@ -51,3 +51,14 @@ Android Studio's local Gradle setup or the GitHub Actions workflow can compile i
 - The native **PiP Styles & Previews** option is added to the existing website Settings menu inside the APK. The earlier floating blue style-picker button has been removed. The 14-option native preview gallery lets you choose a style before entering PiP.
 - When updating the same installed app, a one-time on-device migration attempts to preserve Kitt records from the old `break-tracker.jhamal16.workers.dev` WebView localStorage origin. Existing records under the new domain take precedence for matching Kitt numbers, and a private local backup of any recovered legacy records is retained.
 - **Keep your old APK installed until you've confirmed your data in the updated app.** GitHub's ephemeral debug signing keys can prevent upgrading in place; uninstalling the old app may erase local Kitt records and defeat migration. If Android rejects the update due to signatures, back up Kitt data before removing the old version.
+## Break notifications (Android 1.4)
+
+The APK schedules **local Android notifications** separately from WebView timers. MA/ZIP and Kitt break starts are handed from the hosted page to the Android bridge. When Notify is enabled, the app schedules a warning approximately three minutes before a break ends and a completion reminder. Android's `AlarmManager.setAndAllowWhileIdle` is best effort and the operating system may defer alerts during Doze or aggressive battery optimization. These are **local device alarms**, not server-originated Web Push.
+
+- In the app, open **Settings**, turn on **Notify** (MA/ZIP) or select **Enable Notifications** (Kitt), and accept Android's notification permission request.
+- Tap **Test Notification** to check whether Android permits notifications. If the test fails, visit Android **Settings → Apps → Break Tracker → Notifications**, enable the app and its **Break reminders** channel, and try again.
+- MA/ZIP now includes a three-minute warning in browsers that support notifications while the page is active. Kitt sends start, scheduled, warning and completion alerts while its page is active; the APK handles native background break alarms.
+- Installing a new debug APK can change signing keys. Back up Kitt records before uninstalling the old version.
+
+**iPhone/PWA caveat:** Browser-based timed JavaScript callbacks are not reliably executed once iOS suspends the app, and a service worker alone cannot schedule future remote push alerts. Genuine background Web Push on iOS requires a Home Screen installed PWA, a push subscription, server-side scheduling/delivery (such as a Supabase Edge Function plus a task scheduler), user opt-in, and valid Web Push credentials. These server-side push services have not yet been configured in this repository.
+
