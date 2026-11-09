@@ -9,5 +9,6 @@
   </activity>
   <!-- Explicit, non-exported receiver for Android's PiP action buttons. -->
   <receiver android:name=".MainActivity$StyleActionReceiver" android:exported="false"/>
+  <receiver android:name=".BreakAlarmReceiver" android:exported="false"/>
  </application>
 </manifest>
