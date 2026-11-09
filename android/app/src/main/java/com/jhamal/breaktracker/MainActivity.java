@@ -94,7 +94,11 @@ public class MainActivity extends Activity {
                 sendWarning();
             }
             if (endMs > 0 && remaining <= 0L) {
-                // The scheduled system alarm sends completion even if WebView is suspended.
+                // Complete from the Activity when it remains alive, or from the
+                // alarm receiver if Android has suspended or killed the Activity.
+                BreakAlarmReceiver.send(MainActivity.this, "Break finished",
+                    breakName + " has ended. Time to return.", 302);
+                BreakAlarmReceiver.cancel(MainActivity.this);
                 endMs = 0L;
                 breakName = "";
                 getSharedPreferences(PREFS, MODE_PRIVATE).edit().remove(PREF_END)
@@ -294,10 +298,22 @@ public class MainActivity extends Activity {
                 updatePipParams();
             });
         }
+        @JavascriptInterface public boolean notificationsReady() {
+            NotificationManager manager =
+                (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            return getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(PREF_NOTIFY_ENABLED, true)
+                && manager != null && manager.areNotificationsEnabled()
+                && (Build.VERSION.SDK_INT < 33 ||
+                    checkSelfPermission("android.permission.POST_NOTIFICATIONS") == PackageManager.PERMISSION_GRANTED);
+        }
         @JavascriptInterface public void sendNotification(String title, String body) {
-            runOnUiThread(() -> BreakAlarmReceiver.send(MainActivity.this,
-                title == null ? "Break Tracker" : title.substring(0, Math.min(80, title.length())),
-                body == null ? "" : body.substring(0, Math.min(180, body.length())), 304));
+            runOnUiThread(() -> {
+                String heading = title == null ? "Break Tracker"
+                    : title.substring(0, Math.min(80, title.length()));
+                String message = body == null ? "" : body.substring(0, Math.min(180, body.length()));
+                int id = heading.toLowerCase(Locale.US).contains("finish") ? 302 : 304;
+                BreakAlarmReceiver.send(MainActivity.this, heading, message, id);
+            });
         }
         @JavascriptInterface public void setNotificationsEnabled(boolean enabled) {
             runOnUiThread(() -> {
